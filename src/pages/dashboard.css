@@ -1,0 +1,22 @@
+/* Dashboard.css */
+
+.dashboard {
+    display: flex;
+}
+
+.sidebar {
+    width: 250px;
+    height: 100vh;
+    /* Full height */
+    background-color: #1e7566;
+    color: white;
+    padding: 20px;
+    /* Add additional styling as needed */
+}
+
+.content {
+    flex-grow: 1;
+    /* Allow content to grow and fill available space */
+    padding: 20px;
+    /* Add additional styling as needed */
+}
