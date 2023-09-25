@@ -27,15 +27,11 @@ function App() {
     const [data, setData] = useState([]);
     const [localData, setLocalData] = useState([]);
     const [searchQuery, setSearchQuery] = useState(""); // New state for the search query
-    const [departmentFilter, setDepartmentFilter] = useState(""); // State for department filter
-    const [dateFilter, setDateFilter] = useState(""); // State for date filter
-    const [personnelFilter, setPersonnelFilter] = useState(""); // State for personnel filter
-    const [statusFilter, setStatusFilter] = useState(""); // State for status filter
-
+    
     // Function to fetch data from Firestore
     const fetchData = async () => {
         try {
-            const snapshot = await collection(firestore, "appointments");
+            const snapshot = await collection(firestore, "users");
             const querySnapshot = await getDocs(snapshot);
             const items = querySnapshot.docs.map((doc) => ({
                 id: doc.id,
@@ -78,52 +74,17 @@ function App() {
                 accessor: (row, index) => index + 1, // Calculate row number
             },
             {
-                Header: "User Name",
-                accessor: "name",
+                Header: "Email",
+                accessor: "email",
             },
             {
-                Header: "Department",
-                accessor: "department",
+                Header: "First Name",
+                accessor: "firstName",
             },
             {
-                Header: "Personnel",
-                accessor: "personnel",
+                Header: "Last Name",
+                accessor: "lastName",
             },
-            {
-                Header: "Date",
-                accessor: "date",
-                Cell: ({ value }) => {
-                    if (value) {
-                        const date = value.toDate();
-                        return date.toLocaleDateString();
-                    } else {
-                        return "N/A"; // Handle the case where value is null or undefined
-                    }
-                },
-            },
-            {
-                Header: "Time",
-                accessor: "time",
-                Cell: ({ value }) => {
-                    if (value) {
-                        const timestamp = value.toDate();
-                        const formattedTime = timestamp.toLocaleTimeString();
-                        return formattedTime;
-                    } else {
-                        return "N/A"; // Handle the case where value is null or undefined
-                    }
-                },
-            },
-            {
-                Header: "Reason for Appointment",
-                accessor: "reason",
-            },
-            {
-                Header: "Status",
-                accessor: "status",
-                headerClassName: "status-header-class",
-            },
-            // Add more columns as needed
         ],
         []
     );
@@ -134,28 +95,8 @@ function App() {
 
     // Filter data based on the search query
     const filteredData = data.filter((item) => {
-        return item.name.toLowerCase().includes(searchQuery.toLowerCase());
+        return item.email.toLowerCase().includes(searchQuery.toLowerCase());
     });
-
-    // Apply filters
-    const applyFilters = () => {
-        let filteredResult = filteredData;
-
-        if (departmentFilter) {
-            filteredResult = filteredResult.filter(item => item.department.toLowerCase().includes(departmentFilter.toLowerCase()));
-        }
-        if (dateFilter) {
-            filteredResult = filteredResult.filter(item => item.date && item.date.toDate().toLocaleDateString().includes(dateFilter));
-        }
-        if (personnelFilter) {
-            filteredResult = filteredResult.filter(item => item.personnel.toLowerCase().includes(personnelFilter.toLowerCase()));
-        }
-        if (statusFilter) {
-            filteredResult = filteredResult.filter(item => item.status.toLowerCase().includes(statusFilter.toLowerCase()));
-        }
-
-        return filteredResult;
-    };
 
     // React Table configuration
     const {
@@ -166,7 +107,7 @@ function App() {
         prepareRow,
     } = useTable({
         columns,
-        data: applyFilters(), filteredData, // Use the filtered data
+        data: filteredData, // Use the filtered data
     });
 
     return (
@@ -175,7 +116,7 @@ function App() {
                 <Sidebar />
             </div>
             <div className="container">
-                <h1>Appointment Records</h1>
+                <h1>List of All Users</h1>
 
                 {/* Search input */}
                 <div className="search-container">
@@ -187,38 +128,6 @@ function App() {
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="search-input"
                     />
-
-                    {/* Filter input fields or select dropdowns */}
-                    <div className="filter-container">
-                        <input
-                            type="text"
-                            placeholder="Filter by Department"
-                            value={departmentFilter}
-                            onChange={(e) => setDepartmentFilter(e.target.value)}
-                            className="filter-input"
-                        />
-                        <input
-                            type="text"
-                            placeholder="Filter by Date"
-                            value={dateFilter}
-                            onChange={(e) => setDateFilter(e.target.value)}
-                            className="filter-input"
-                        />
-                        <input
-                            type="text"
-                            placeholder="Filter by Personnel"
-                            value={personnelFilter}
-                            onChange={(e) => setPersonnelFilter(e.target.value)}
-                            className="filter-input"
-                        />
-                        <input
-                            type="text"
-                            placeholder="Filter by Status"
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                            className="filter-input"
-                        />
-                    </div>
                 </div>
 
                 <button className="btn" onClick={exportDataAsCSV}>Export as CSV</button>

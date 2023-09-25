@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, getDocs } from "firebase/firestore";
+import { getStorage, ref, getDownloadURL } from "firebase/storage"; // Import Firebase Storage related functions
 import { useTable } from "react-table";
-import { FaSearch } from 'react-icons/fa'; // Import icons
 import { saveAs } from 'file-saver'; // Import file-saver for downloading
-import './appointment.css';
+import { FaSearch } from 'react-icons/fa'; // Import icons
+import './transactions.css';
 import Sidebar from "../components/sidebar";
 
 // Firebase configuration
@@ -15,7 +16,7 @@ const firebaseConfig = {
     storageBucket: "muniserve-4dc11.appspot.com",
     messagingSenderId: "874813480248",
     appId: "1:874813480248:web:edd1ff1f128b5bb4a2b5cd",
-    measurementId: "G-LS66HXR3GT",
+    measurementId: "G-LS66HXR3GT"
 };
 
 // Initialize Firebase
@@ -25,31 +26,34 @@ const firestore = getFirestore(app);
 function App() {
     // State to hold the fetched data
     const [data, setData] = useState([]);
-    const [localData, setLocalData] = useState([]);
+    // Initialize Firebase Storage
+    const storage = getStorage(app);
     const [searchQuery, setSearchQuery] = useState(""); // New state for the search query
-    const [departmentFilter, setDepartmentFilter] = useState(""); // State for department filter
-    const [dateFilter, setDateFilter] = useState(""); // State for date filter
-    const [personnelFilter, setPersonnelFilter] = useState(""); // State for personnel filter
-    const [statusFilter, setStatusFilter] = useState(""); // State for status filter
 
-    // Function to fetch data from Firestore
     const fetchData = async () => {
         try {
-            const snapshot = await collection(firestore, "appointments");
+            const snapshot = await collection(firestore, "birth_reg");
             const querySnapshot = await getDocs(snapshot);
             const items = querySnapshot.docs.map((doc) => ({
                 id: doc.id,
                 ...doc.data(),
             }));
+
+            // Fetch image URLs from Firebase Storage and add them to the data
+            for (const item of items) {
+                if (item.imagePath) {
+                    const imageUrl = await getDownloadURL(ref(storage, item.imagePath));
+                    item.imageUrl = imageUrl; // Store the image URL in the data
+                }
+            }
+
             setData(items);
-            setLocalData(items); // Initialize localData with the fetched data
         } catch (error) {
             console.error("Error fetching data: ", error);
         }
     };
 
     useEffect(() => {
-        // Fetch data when the component mounts
         fetchData();
     }, []);
 
@@ -70,6 +74,7 @@ function App() {
         saveAs(blob, 'Transaction_Records.csv');
     };
 
+
     // Define table columns
     const columns = React.useMemo(
         () => [
@@ -78,84 +83,105 @@ function App() {
                 accessor: (row, index) => index + 1, // Calculate row number
             },
             {
-                Header: "User Name",
-                accessor: "name",
+                Header: "Childname",
+                accessor: "childname",
             },
             {
-                Header: "Department",
-                accessor: "department",
+                Header: "Birthdate",
+                accessor: "c_birthdate",
             },
             {
-                Header: "Personnel",
-                accessor: "personnel",
+                Header: "Birth Place",
+                accessor: "c_birthplace",
             },
             {
-                Header: "Date",
-                accessor: "date",
-                Cell: ({ value }) => {
-                    if (value) {
-                        const date = value.toDate();
-                        return date.toLocaleDateString();
-                    } else {
-                        return "N/A"; // Handle the case where value is null or undefined
-                    }
-                },
+                Header: "Sex",
+                accessor: "c_sex",
             },
             {
-                Header: "Time",
-                accessor: "time",
-                Cell: ({ value }) => {
-                    if (value) {
-                        const timestamp = value.toDate();
-                        const formattedTime = timestamp.toLocaleTimeString();
-                        return formattedTime;
-                    } else {
-                        return "N/A"; // Handle the case where value is null or undefined
-                    }
-                },
+                Header: "Type of Birth",
+                accessor: "c_typeofbirth",
             },
             {
-                Header: "Reason for Appointment",
-                accessor: "reason",
+                Header: "Weight",
+                accessor: "c_weight",
+            },
+            {
+                Header: "Birth Order",
+                accessor: "c_birthorder",
+            },
+            {
+                Header: "Mother's Name",
+                accessor: "m_name",
+            },
+            {
+                Header: "Mother's Age",
+                accessor: "m_age",
+            },
+            {
+                Header: "Mother's Occupation",
+                accessor: "m_occur",
+            },
+            {
+                Header: "Mother's Citizenship",
+                accessor: "m_citizenship",
+            },
+            {
+                Header: "Mother's Religion",
+                accessor: "m_religion",
+            },
+            {
+                Header: "Mother's Total Childern",
+                accessor: "m_totchild",
+            },
+            {
+                Header: "Father's Name",
+                accessor: "f_name",
+            },
+            {
+                Header: "Father's Age",
+                accessor: "f_age",
+            },
+            {
+                Header: "Father's Occupation",
+                accessor: "f_occur",
+            },
+            {
+                Header: "Father's Citizenship",
+                accessor: "f_citizenship",
+            },
+            {
+                Header: "Father's Religion",
+                accessor: "f_religion",
+            },
+            {
+                Header: "Place of Marriage",
+                accessor: "f_placemarried",
+            },
+            {
+                Header: "Birth Attendant",
+                accessor: "attendant",
+            },
+            {
+                Header: "Proof of Payment",
+                accessor: "payment", // Use the property that holds the image URL
+                Cell: ({ value }) => (
+                    <img src={value} alt="Image" style={{ width: "150px", height: "auto" }} />
+                ),
             },
             {
                 Header: "Status",
                 accessor: "status",
-                headerClassName: "status-header-class",
             },
-            // Add more columns as needed
         ],
         []
     );
 
-    useEffect(() => {
-        setData(localData);
-    }, [localData]);
-
     // Filter data based on the search query
     const filteredData = data.filter((item) => {
-        return item.name.toLowerCase().includes(searchQuery.toLowerCase());
+        return item.childname.toLowerCase().includes(searchQuery.toLowerCase());
     });
 
-    // Apply filters
-    const applyFilters = () => {
-        let filteredResult = filteredData;
-
-        if (departmentFilter) {
-            filteredResult = filteredResult.filter(item => item.department.toLowerCase().includes(departmentFilter.toLowerCase()));
-        }
-        if (dateFilter) {
-            filteredResult = filteredResult.filter(item => item.date && item.date.toDate().toLocaleDateString().includes(dateFilter));
-        }
-        if (personnelFilter) {
-            filteredResult = filteredResult.filter(item => item.personnel.toLowerCase().includes(personnelFilter.toLowerCase()));
-        }
-        if (statusFilter) {
-            filteredResult = filteredResult.filter(item => item.status.toLowerCase().includes(statusFilter.toLowerCase()));
-        }
-
-        return filteredResult;
-    };
 
     // React Table configuration
     const {
@@ -166,7 +192,7 @@ function App() {
         prepareRow,
     } = useTable({
         columns,
-        data: applyFilters(), filteredData, // Use the filtered data
+        data: filteredData, // Use the filtered data
     });
 
     return (
@@ -175,8 +201,7 @@ function App() {
                 <Sidebar />
             </div>
             <div className="container">
-                <h1>Appointment Records</h1>
-
+                <h1>Transaction Records</h1>
                 {/* Search input */}
                 <div className="search-container">
                     <FaSearch className="search-icon"></FaSearch>
@@ -187,43 +212,11 @@ function App() {
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="search-input"
                     />
-
-                    {/* Filter input fields or select dropdowns */}
-                    <div className="filter-container">
-                        <input
-                            type="text"
-                            placeholder="Filter by Department"
-                            value={departmentFilter}
-                            onChange={(e) => setDepartmentFilter(e.target.value)}
-                            className="filter-input"
-                        />
-                        <input
-                            type="text"
-                            placeholder="Filter by Date"
-                            value={dateFilter}
-                            onChange={(e) => setDateFilter(e.target.value)}
-                            className="filter-input"
-                        />
-                        <input
-                            type="text"
-                            placeholder="Filter by Personnel"
-                            value={personnelFilter}
-                            onChange={(e) => setPersonnelFilter(e.target.value)}
-                            className="filter-input"
-                        />
-                        <input
-                            type="text"
-                            placeholder="Filter by Status"
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                            className="filter-input"
-                        />
-                    </div>
                 </div>
 
                 <button className="btn" onClick={exportDataAsCSV}>Export as CSV</button>
 
-                <table {...getTableProps()} className="custom-table" style={{ border: "1px solid black" }}>
+                <table {...getTableProps()} style={{ border: "1px solid black" }}>
                     <thead>
                         {headerGroups.map((headerGroup) => (
                             <tr {...headerGroup.getHeaderGroupProps()}>
@@ -242,12 +235,15 @@ function App() {
                         {rows.map((row) => {
                             prepareRow(row);
                             return (
-                                <tr {...row.getRowProps()} style={{ borderBottom: "1px solid black" }}>
+                                <tr
+                                    {...row.getRowProps()}
+                                    style={{ borderBottom: "1px solid black" }}
+                                >
                                     {row.cells.map((cell) => {
                                         return (
                                             <td
                                                 {...cell.getCellProps()}
-                                                style={{ padding: "8px", border: "1px solid black", }}
+                                                style={{ padding: "8px", border: "1px solid black" }}
                                             >
                                                 {cell.render("Cell")}
                                             </td>
