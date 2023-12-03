@@ -52,7 +52,7 @@ function App() {
     // Function to export data as CSV
     const exportDataAsCSV = () => {
         let csvContent = "data:text/csv;charset=utf-8," +
-            "Childname,Birthdate,Birth Place,Sex,Type of Birth,Weight,Birth Order,Mother's Name,Mother's Age,Mother's Occupation,Mother's Citizenship,Mother's Religion,Mother's Total Children,Father's Name,Father's Age,Father's Occupation,Father's Citizenship,Father's Religion,Place of Marriage,Birth Attendant,Status\n"; // CSV header row
+            "Email, First Name, Last Name, Barangay\n"; // CSV header row
 
         // Add data rows to CSV
         data.forEach((item) => {
@@ -84,6 +84,10 @@ function App() {
             {
                 Header: "Last Name",
                 accessor: "lastName",
+            },
+            {
+                Header: "Barangay",
+                accessor: "barangay",
             },
         ],
         []

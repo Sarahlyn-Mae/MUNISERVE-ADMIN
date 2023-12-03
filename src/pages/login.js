@@ -90,7 +90,7 @@ function Login() {
                         <a href="/forgot-passwords">Forgot Password?</a>
                     </div>
                     <h6>
-                        Don't have an account yet? <a href='/signup'>Signup</a>
+                        Don't have an account yet? {Link ="/login"} Signup
                     </h6>
                 </div>
             </div>
