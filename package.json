@@ -18,6 +18,8 @@
     "firebase": "^10.4.0",
     "font-awesome": "^4.7.0",
     "fullcalendar": "^6.1.8",
+    "jspdf": "^2.5.1",
+    "jspdf-autotable": "^3.8.1",
     "react": "^18.2.0",
     "react-apexcharts": "^1.4.1",
     "react-calendar": "^4.6.0",

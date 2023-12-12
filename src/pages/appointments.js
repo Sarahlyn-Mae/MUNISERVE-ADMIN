@@ -6,6 +6,8 @@ import { FaSearch } from 'react-icons/fa'; // Import icons
 import { saveAs } from 'file-saver'; // Import file-saver for downloading
 import './appointment.css';
 import Sidebar from "../components/sidebar";
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 // Firebase configuration
 const firebaseConfig = {
@@ -31,7 +33,6 @@ function App() {
     const [dateFilter, setDateFilter] = useState(""); // State for date filter
     const [personnelFilter, setPersonnelFilter] = useState(""); // State for personnel filter
     const [statusFilter, setStatusFilter] = useState(""); // State for status filter
-    const [appointmentCounts, setAppointmentCounts] = useState({});
 
     // Function to fetch data from Firestore
     const fetchData = async () => {
@@ -42,26 +43,8 @@ function App() {
                 id: doc.id,
                 ...doc.data(),
             }));
-
-            // Sort the data by date and time in descending order (newest to oldest)
-            const sortedData = items.sort((a, b) => {
-                const dateA = a.date ? a.date.toDate() : null;
-                const dateB = b.date ? b.date.toDate() : null;
-
-                return (dateB - dateA) || (b.time - a.time);
-            });
-
-            setData(sortedData);
-            setLocalData(sortedData); // Initialize localData with the sorted data
-
-            // Count appointments per day
-            const counts = {};
-            sortedData.forEach((item) => {
-                const date = item.date ? item.date.toDate().toLocaleDateString() : "N/A";
-                counts[date] = (counts[date] || 0) + 1;
-            });
-            setAppointmentCounts(counts);
-
+            setData(items);
+            setLocalData(items); // Initialize localData with the fetched data
         } catch (error) {
             console.error("Error fetching data: ", error);
         }
@@ -71,23 +54,152 @@ function App() {
         // Fetch data when the component mounts
         fetchData();
     }, []);
-    
+
+    // PDF File
+    const exportDataAsPDF = () => {
+        const columns = [
+            {
+                Header: 'No.',
+                accessor: (row, index) => index + 1,
+                width: 50,
+            },
+            {
+                Header: 'User Name',
+                accessor: 'name',
+                width: 150,
+            },
+            {
+                Header: 'Department',
+                accessor: 'department',
+                width: 100,
+            },
+            {
+                Header: 'Personnel',
+                accessor: 'personnel',
+                width: 100,
+            },
+            {
+                Header: 'Date',
+                accessor: 'date',
+                width: 100,
+            },
+            // ... other columns ...
+        ];
+
+        // Create a PDF document
+        const pdfDoc = new jsPDF();
+
+        // Set font size and style
+        pdfDoc.setFontSize(12);
+        pdfDoc.setFont('helvetica', 'bold');
+
+        // Add header row to PDF as a table
+        pdfDoc.autoTable({
+            head: [columns.map((column) => column.Header)],
+            startY: 10,
+            styles: { fontSize: 12, cellPadding: 2 },
+        });
+
+        // Add data rows to PDF as a table
+        const dataRows = data.map((item) => columns.map((column) => {
+            // Format date as a string if it exists
+            if (column.accessor === 'date' && item[column.accessor]) {
+                return item[column.accessor].toDate().toLocaleDateString() || '';
+            }
+            return item[column.accessor] || '';
+        }));
+
+        pdfDoc.autoTable({
+            body: dataRows,
+            startY: pdfDoc.autoTable.previous.finalY + 2,
+            styles: { fontSize: 10, cellPadding: 2 },
+        });
+        // Save the PDF
+        pdfDoc.save('Transaction_Records.pdf');
+    };
+    // Call the export function
+    exportDataAsPDF();
+
+
     // Function to export data as CSV
     const exportDataAsCSV = () => {
-        let csvContent = "data:text/csv;charset=utf-8," +
-            "\n"; // CSV header row
+        const columns = [
+            {
+                Header: 'No.',
+                accessor: (row, index) => index + 1,
+            },
+            {
+                Header: 'User Name',
+                accessor: 'name',
+            },
+            {
+                Header: 'Department',
+                accessor: 'department',
+            },
+            {
+                Header: 'Personnel',
+                accessor: 'personnel',
+            },
+            {
+                Header: 'Date',
+                accessor: 'date',
+            },
+            // ... other columns ...
+        ];
+
+        // Create CSV header row based on column headers and widths
+        let csvContent = columns.map((column) => "${column.Header || ''}").join(',') + '\n';
+        csvContent += columns.map((column) => "${column.width || ''}").join(',') + '\n';
 
         // Add data rows to CSV
         data.forEach((item) => {
-            const row = Object.values(item).map(value => `"${value}"`).join(",") + "\n";
+            const row = columns.map((column) => {
+                // Format date as a string if it exists
+                let cellContent = item[column.accessor] || '';
+
+                // Truncate cell content if it exceeds a certain length (adjust the length as needed)
+                const maxLength = column.width || 100; // Use column width as max length
+                if (cellContent.length > maxLength) {
+                    cellContent = cellContent.substring(0, maxLength - 100) + '...';
+                }
+
+                if (column.accessor === 'date' && item[column.accessor]) {
+                    return "${item[column.accessor].toDate().toLocaleDateString() || ''}";
+                }
+                return "${cellContent}";
+            }).join(',') + '\n';
+
             csvContent += row;
         });
 
-        // Create a data URI and trigger download
-        const encodedURI = encodeURI(csvContent);
+        // Create a Blob containing the CSV data
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
-        saveAs(blob, 'Transaction_Records.csv');
+
+        // Create a download link
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = 'Transaction_Records.csv';
+
+        // Append the link to the document
+        document.body.appendChild(link);
+
+        // Trigger a click event on the link to initiate the download
+        link.click();
+
+        // Remove the link from the document
+        document.body.removeChild(link);
     };
+
+    // Function to handle export based on type
+    const handleExport = (exportType) => {
+        if (exportType === 'pdf') {
+            exportDataAsPDF();
+        } else if (exportType === 'csv') {
+            exportDataAsCSV();
+        }
+        // Add more conditions for other export types if needed
+    };
+
 
     // Define table columns
     const columns = React.useMemo(
@@ -109,6 +221,10 @@ function App() {
                 accessor: "personnel",
             },
             {
+                Header: "Reason",
+                accessor: "reason",
+            },
+            {
                 Header: "Date",
                 accessor: "date",
                 Cell: ({ value }) => {
@@ -120,29 +236,7 @@ function App() {
                     }
                 },
             },
-            {
-                Header: "Time",
-                accessor: "time",
-                Cell: ({ value }) => {
-                    if (value) {
-                        const timestamp = value.toDate();
-                        const formattedTime = timestamp.toLocaleTimeString();
-                        return formattedTime;
-                    } else {
-                        return "N/A"; // Handle the case where value is null or undefined
-                    }
-                },
-            },
-            {
-                Header: "Reason for Appointment",
-                accessor: "reason",
-            },
-            {
-                Header: "Status",
-                accessor: "status",
-                headerClassName: "status-header-class",
-            },
-            // Add more columns as needed
+            // ... other columns ...
         ],
         []
     );
@@ -185,30 +279,8 @@ function App() {
         prepareRow,
     } = useTable({
         columns,
-        data: applyFilters() || [], // Use the filtered data if available, otherwise use an empty array
+        data: applyFilters(), // Use the filtered data
     });
-
-    const chartOptions = {
-        scales: {
-            x: [
-                {
-                    type: 'time',
-                    labels: Object.keys(appointmentCounts),
-                },
-            ],
-            y: [
-                {
-                    type: 'linear',
-                    position: 'left',
-                    ticks: {
-                        beginAtZero: true,
-                        stepSize: 1,
-                    },
-                },
-            ],
-        },
-    };
-
 
     return (
         <div>
@@ -261,8 +333,8 @@ function App() {
                         />
                     </div>
                 </div>
-
-                <button className="btn" onClick={exportDataAsCSV}>Export as CSV</button>
+                {/* DropdownButton component for export */}
+                <DropdownButton handleExport={handleExport} />
 
                 <table {...getTableProps()} className="custom-table" style={{ border: "1px solid black" }}>
                     <thead>
@@ -284,22 +356,36 @@ function App() {
                             prepareRow(row);
                             return (
                                 <tr {...row.getRowProps()} style={{ borderBottom: "1px solid black" }}>
-                                    {row.cells.map((cell) => (
-                                        <td
-                                            {...cell.getCellProps()}
-                                            style={{ padding: "8px", border: "1px solid black", }}
-                                        >
-                                            {cell.render("Cell")}
-                                        </td>
-                                    ))}
+                                    {row.cells.map((cell) => {
+                                        return (
+                                            <td
+                                                {...cell.getCellProps()}
+                                                style={{ padding: "8px", border: "1px solid black", }}
+                                            >
+                                                {cell.render("Cell")}
+                                            </td>
+                                        );
+                                    })}
                                 </tr>
                             );
                         })}
                     </tbody>
                 </table>
             </div>
-        </div> 
-    ); 
+        </div>
+    );
 }
 
-export default App; 
+// DropdownButton component
+const DropdownButton = ({ handleExport }) => (
+    <div className="dropdown">
+        <button className="dropbtn">Export File</button>
+        <div className="dropdown-content">
+            <button onClick={() => handleExport('pdf')}>Export as PDF</button>
+            <button onClick={() => handleExport('csv')}>Export as CSV</button>
+            {/* Add more buttons for other export types */}
+        </div>
+    </div>
+);
+
+export default App;

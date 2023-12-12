@@ -4,7 +4,7 @@
     top: 0;
     left: 0;
     overflow-y: auto;
-    z-index: 2; /* Set a higher z-index value for the sidebar */
+    z-index: 3; /* Set a higher z-index value for the sidebar */
 }
 
 .container {
@@ -12,7 +12,10 @@
     margin-left: 200px;
     width: 100%;
     padding: 10px;
-    z-index: 1; /* Set a lower z-index value for the container */
+    position: relative; /* Add relative positioning for stacking context */
+    z-index: 2; /* Set a lower z-index value for the container */
+    margin-top: 20px;
+    overflow-x: hidden;
 }
 
 .header {
@@ -158,20 +161,27 @@ h2 {
     color: black;
 }
 
+.chart,
 .charts {
     display: flex;
     grid-template-columns: 1fr 1fr;
-    gap: 20px; /* Adjust the gap between charts as needed */
+    gap: 90px; /* Adjust the gap between charts as needed */
     margin-top: 10px;
     justify-content: center;
     align-items: center;
     text-align: center;
-    margin-left: 40px;
+    margin-left: -100px;
 }
 
 .col-4 {
     margin: 10px;
     width: 40%; /* Adjust the width as needed */
+}
+
+.col-4 h6 {
+    font-size: 15px;
+    font-weight: bold;
+    text-align: center;
 }
 
 /* Optional: Adjust the width for smaller screens */

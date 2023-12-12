@@ -69,7 +69,7 @@ const Dashboard = ({ count }) => {
 
   const [barChartData, setBarChartData] = useState({
     options: {
-      colors: ["#8884d8", "#82ca9d", "#FF5733"],
+      colors: ["#8884d8", "#82ca9d", "#FF5733", "#1E88DC", "#FFCA51", "#BB6FD4"],
       chart: {
         id: "basic-bar",
       },
@@ -90,6 +90,18 @@ const Dashboard = ({ count }) => {
         name: "Disapproved",
         data: [],
       },
+      {
+        name: "Rejected",
+        data: [],
+      },
+      {
+        name: "Completed",
+        data: [],
+      },
+      {
+        name: "On Process",
+        data: [],
+      },
     ],
   });
 
@@ -97,32 +109,64 @@ const Dashboard = ({ count }) => {
     const fetchData = async () => {
       try {
         const appointmentCollection = collection(firestore, "appointments");
-        const querySnapshot = await getDocs(appointmentCollection);
+        const birthRegCollection = collection(firestore, "birth_reg");
+        const marriageCertCollection = collection(firestore, "marriageCert");
+        const deathCertCollection = collection(firestore, "deathCert");
+        const jobCollection = collection(firestore, "job");
+        const businessPermitCollection = collection(firestore, "businessPermit");
+
+        const [appointmentSnapshot, birthRegSnapshot, marriageCertSnapshot, deathCertSnapshot, jobSnapshot, businessPermitSnapshot] =
+          await Promise.all([
+            getDocs(appointmentCollection),
+            getDocs(birthRegCollection),
+            getDocs(marriageCertCollection),
+            getDocs(deathCertCollection),
+            getDocs(jobCollection),
+            getDocs(businessPermitCollection),
+          ]);
 
         const counts = {
           pending: 0,
           approved: 0,
           disapproved: 0,
+          completed: 0,
+          rejected: 0,
+          onProcess: 0,
         };
 
         const categories = [];
 
-        querySnapshot.forEach((doc) => {
-          const appointmentData = doc.data();
+        const processCollectionData = (snapshot, statusField) => {
+          snapshot.forEach((doc) => {
+            const data = doc.data();
 
-          if (appointmentData.status === "Pending") {
-            counts.pending += 1;
-          } else if (appointmentData.status === "Approved") {
-            counts.approved += 1;
-          } else if (appointmentData.status === "Disapproved") {
-            counts.disapproved += 1;
-          }
+            if (data.status === "Pending") {
+              counts.pending += 1;
+            } else if (data.status === "Approved") {
+              counts.approved += 1;
+            } else if (data.status === "Disapproved") {
+              counts.disapproved += 1;
+            } else if (data.status === "Rejected") {
+              counts.approved += 1;
+            } else if (data.status === "Completed") {
+              counts.disapproved += 1;
+            } else if (data.status === "On Process") {
+              counts.disapproved += 1;
+            }
 
-          // Assuming your data has a createdAt field for x-axis
-          // Make sure createdAt is a valid date string or a timestamp
-          const date = new Date(appointmentData.createdAt);
-          categories.push(date.toLocaleDateString()); // Adjust the format if needed
-        });
+            // Assuming your data has a createdAt field for x-axis
+            // Make sure createdAt is a valid date string or a timestamp
+            const date = new Date(data.createdAt);
+            categories.push(date.toLocaleDateString()); // Adjust the format if needed
+          });
+        };
+
+        processCollectionData(appointmentSnapshot);
+        processCollectionData(birthRegSnapshot);
+        processCollectionData(marriageCertSnapshot);
+        processCollectionData(deathCertSnapshot);
+        processCollectionData(jobSnapshot, "status"); // Assuming job collection has a 'status' field
+        processCollectionData(businessPermitSnapshot, "status"); // Assuming businessPermit collection has a 'status' field
 
         console.log("Fetched Data:", counts, categories);
 
@@ -148,6 +192,19 @@ const Dashboard = ({ count }) => {
               name: "Disapproved",
               data: [counts.disapproved],
             },
+            {
+              name: "Rejected",
+              data: [counts.pending],
+            },
+            {
+              name: "Completed",
+              data: [counts.approved],
+            },
+            {
+              name: "On Process",
+              data: [counts.disapproved],
+            },
+            // Add more series for other status types (completed, rejected, onProcess, etc.)
           ],
         }));
       } catch (error) {
@@ -161,44 +218,57 @@ const Dashboard = ({ count }) => {
 
   console.log("Rendering Data:", barChartData);
 
-  const [transactionCounts, setTransactionCounts] = useState({
-    pendingCount: 0,
-    completedCount: 0,
-    approvedCount: 0,
-    disapprovedCount: 0,
-    Appointments: 0,
+  const [recordCounts, setRecordCounts] = useState({
+    appointments: 0,
+    birthRegistration: 0,
+    marriageCertificate: 0,
+    deathCertificate: 0,
+    jobApplication: 0,
+    businessPermit: 0,
   });
 
-  const fetchAppointmentCounts = async () => {
-    try {
-      const snapshot = await firebase.firestore().collection('appointments').get();
-      const data = snapshot.docs.map((doc) => doc.data());
+  useEffect(() => {
+    const fetchRecordCounts = async () => {
+      try {
+        const appointmentsCollection = collection(firestore, "appointments");
+        const birthRegCollection = collection(firestore, "birth_reg");
+        const marriageCertCollection = collection(firestore, "marriageCert");
+        const deathCertCollection = collection(firestore, "deathCert");
+        const jobCollection = collection(firestore, "job");
+        const businessPermitCollection = collection(firestore, "businessPermit");
 
-      const pendingCount = data.filter((appointment) => appointment.status === 'Pending').length;
-      const completedCount = data.filter((appointment) => appointment.status === 'Completed').length;
-      const approvedCount = data.filter((appointment) => appointment.status === 'Approved').length;
-      const disapprovedCount = data.filter((appointment) => appointment.status === 'Disapproved').length;
+        const [appointmentsSnapshot, birthRegSnapshot, marriageCertSnapshot, deathCertSnapshot, jobSnapshot, businessPermitSnapshot] =
+          await Promise.all([
+            getDocs(appointmentsCollection),
+            getDocs(birthRegCollection),
+            getDocs(marriageCertCollection),
+            getDocs(deathCertCollection),
+            getDocs(jobCollection),
+            getDocs(businessPermitCollection),
+          ]);
 
-      setTransactionCounts({
-        pendingCount,
-        completedCount,
-        approvedCount,
-        disapprovedCount,
-        Appointments: data.length,
-      });
+        const counts = {
+          appointments: appointmentsSnapshot.size,
+          birthRegistration: birthRegSnapshot.size,
+          marriageCertificate: marriageCertSnapshot.size,
+          deathCertificate: deathCertSnapshot.size,
+          jobApplication: jobSnapshot.size,
+          businessPermit: businessPermitSnapshot.size,
+        };
 
-      return { pendingCount, completedCount, approvedCount, disapprovedCount };
-    } catch (error) {
-      console.error('Error fetching transaction counts:', error);
-      return {
-        pendingCount: 0,
-        completedCount: 0,
-        approvedCount: 0,
-        disapprovedCount: 0,
-        Appointments: 0,
-      };
-    }
-  };
+        console.log("Record Counts:", counts);
+
+        setRecordCounts(counts);
+      } catch (error) {
+        console.error("Error fetching record counts from Firebase:", error);
+        // Handle error here
+      }
+    };
+
+    fetchRecordCounts();
+  }, []);
+
+  console.log("Record Counts:", recordCounts);
 
   return (
     <main className='main-container'>
@@ -223,7 +293,7 @@ const Dashboard = ({ count }) => {
               <h3>Total No. of Service Requests</h3>
               <BsClipboardCheckFill className='card_icon' />
             </div>
-            <h2>{transactionCounts.Appointments}</h2>
+
           </div>
 
           <div className='card'>
@@ -231,7 +301,7 @@ const Dashboard = ({ count }) => {
               <h3>Pending</h3>
               <BsClockHistory className='card_icon' />
             </div>
-            <h2>{transactionCounts.pendingCount}</h2>
+
           </div>
 
           <div className='card'>
@@ -239,7 +309,7 @@ const Dashboard = ({ count }) => {
               <h3>Completed</h3>
               <BsCheckCircleFill className='card_icon' />
             </div>
-            <h2>{transactionCounts.completedCount}</h2>
+
           </div>
 
           <div className='card'>
@@ -247,7 +317,7 @@ const Dashboard = ({ count }) => {
               <h3>Disapproved</h3>
               <BsXCircleFill className='card_icon' />
             </div>
-            <h2>{transactionCounts.disapprovedCount}</h2>
+
           </div>
 
           <div className='card'>
@@ -255,61 +325,71 @@ const Dashboard = ({ count }) => {
               <h3>Approved</h3>
               <BsCheckCircleFill className='card_icon' />
             </div>
-            <h2>{transactionCounts.approvedCount}</h2>
+
           </div>
         </div>
-        
+
         {/* Date Picker */}
         <div className="date-picker">
           <label>Select Date: </label>
           <DatePicker selected={selectedDate} onChange={handleDateChange} />
         </div>
 
-        {barChartData.options && barChartData.series && (
-          <div className='charts'>
-            <div className="row">
-              <div className="col-4">
-                <Chart
-                  options={barChartData.options}
-                  series={barChartData.series}
-                  type="bar"
-                  width="450"
-                />
+        <div className='chart'>
+          {recordCounts && (
+            <div className='charts'>
+              <div className="row">
+                <div className="col-4">
+                  <h6>NO. OF APPLICATIONS PER SERVICES</h6>
+                  <Chart
+                    options={{
+                      colors: ["#8884d8"],
+                      chart: {
+                        id: "record-bar",
+                      },
+                      xaxis: {
+                        categories: ["Appointments", "Birth Registration", "Marriage Certificate", "Death Certificate", "Job Application", "Business Permit"],
+                      },
+                    }}
+                    series={[
+                      {
+                        name: "Records",
+                        data: [
+                          recordCounts.appointments,
+                          recordCounts.birthRegistration,
+                          recordCounts.marriageCertificate,
+                          recordCounts.deathCertificate,
+                          recordCounts.jobApplication,
+                          recordCounts.businessPermit,
+                        ],
+                      },
+                    ]}
+                    type="bar"
+                    width="450"
+                  />
+                </div>
               </div>
-
-              <div className="col-4">
-                < Chart
-                  options={barChartData.options}
-                  series={barChartData.series}
-                  type="line"
-                  width="450"
-                />
-              </div>
-
-              <div className="col-4">
-                <Chart
-                  options={barChartData.options}
-                  series={barChartData.series}
-                  type="area"
-                  width="450"
-                />
-              </div>
-
-              <div className="col-4">
-                <Chart
-                  options={barChartData.options}
-                  series={barChartData.series}
-                  type="scatter"
-                  width="450"
-                />
-              </div>
-
             </div>
-          </div>
-        )}
+          )}
 
+          {barChartData.options && barChartData.series && (
+            <div className='charts'>
+              <div className="row">
+                <div className="col-4">
+                  <Chart
+                    options={barChartData.options}
+                    series={barChartData.series}
+                    type="bar"
+                    width="450"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
       </div>
-    </main> 
+    </main>
   );
 };
 
