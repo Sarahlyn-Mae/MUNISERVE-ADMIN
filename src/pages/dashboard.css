@@ -4,15 +4,93 @@
     top: 0;
     left: 0;
     overflow-y: auto;
+    z-index: 2; /* Set a higher z-index value for the sidebar */
 }
 
-.main-container {
-    grid-area: main;
-    overflow-y: auto;
-    padding: 20px 20px;
-    color: rgba(7, 7, 7, 0.95);
-    margin-left: 250px;
+.container {
+    font-family: Arial, sans-serif;
+    margin-left: 200px;
+    width: 100%;
+    padding: 10px;
+    z-index: 1; /* Set a lower z-index value for the container */
 }
+
+.header {
+    font-size: 30px;
+    font-weight: bold;
+    margin-top: 0;
+    display: flex;
+    align-items: center;
+    position: fixed;
+    top: 0;
+    width: 100%;
+    height: 80px;
+    background-color: #fff;
+    z-index: 1; /* Set a lower z-index value for the header */
+    box-shadow: 0px 5px 10px 0px rgba(0, 0, 0, 0.1); /* Add bottom shadow */
+}
+
+.header h1 {
+    font-size: 30px;
+    font-weight: bold;
+    margin-top: 2px;
+    margin-left: 60px;
+    display: flex;
+    align-items: center;
+}
+
+.icons {
+    flex-direction: row;
+    display: flex;
+    margin-top: 20px;
+}
+
+.notif {
+    width: 30px;
+    height: 30px;
+    margin-left: 580px;
+    cursor: pointer;
+}
+
+.account-img {
+    width: 32px;
+    height: 32px;
+    margin-left: 20px;
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
+    border: 1px gray solid;
+    border-radius: 50px;
+}
+
+.account-name {
+    background-color: #307A59;
+    width: 115px;
+    height: 33px;
+    font-size: 14px;
+    color: #fff;
+    font-weight: 400;
+    text-align: center;
+    border-radius: 50px;
+    display: flex;
+    justify-content: center; /* Center the content horizontally */
+    align-items: center; /* Center the content vertically */
+    margin-left: -25px;
+    position: relative;
+    z-index: 1;
+}
+
+.account-name h1 {
+    margin: 0; 
+    font-size: 14px;
+    font-weight: 400;
+    color: #fff;
+}
+
+body {
+  overflow-x: hidden;
+}
+
 
 .main-title h1 {
     margin-left: 8px;
@@ -20,33 +98,52 @@
 
 .main-cards {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr;
-    gap: 20px;
-    margin: 15px 0;
+    grid-template-columns: 2fr 2fr 2fr 2fr 2fr;
+    gap: 10px;
+    margin: 10px 0;
+    margin-top: 90px;
+    margin-left: 60px;
+}
+
+h3 {
+    font-size: 15px;
+    font-weight: bold;
+}
+
+h2 {
+    font-size: 20px;
 }
 
 .card {
     display: flex;
     flex-direction: column;
     justify-content: space-around;
-    padding: 3px 10px;
+    padding: 5px 10px;
     border-radius: 25px;
+    width: 150px;
 }
 
 .card:first-child {
     background-color: #FDFF92;
 }
 
+/*Pending*/
 .card:nth-child(2) {
     background-color: #FFA0A0;
 }
 
+/*Completed*/
 .card:nth-child(3) {
     background-color: #94B1FB;
 }
 
+/*Disapproved*/
 .card:nth-child(4) {
     background-color: #94FB98;
+}
+
+.card:nth-child(5) {
+    background-color: #d98fe9;
 }
 
 .card-inner {
@@ -57,14 +154,35 @@
 }
 
 .card-inner>.card_icon {
-    font-size: 40px;
+    font-size: 25px;
     color: black;
 }
 
 .charts {
-    display: grid;
+    display: flex;
     grid-template-columns: 1fr 1fr;
-    gap: 20px;
+    gap: 20px; /* Adjust the gap between charts as needed */
+    margin-top: 10px;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    margin-left: 40px;
+}
+
+.col-4 {
+    margin: 10px;
+    width: 40%; /* Adjust the width as needed */
+}
+
+/* Optional: Adjust the width for smaller screens */
+@media (max-width: 768px) {
+    .col-4 {
+        width: 100%;
+    }
+}
+
+.date-picker {
+    margin-left: 60px;
     margin-top: 30px;
-    height: 300px;
+    margin-bottom: 5px;
 }

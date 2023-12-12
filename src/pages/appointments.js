@@ -31,6 +31,7 @@ function App() {
     const [dateFilter, setDateFilter] = useState(""); // State for date filter
     const [personnelFilter, setPersonnelFilter] = useState(""); // State for personnel filter
     const [statusFilter, setStatusFilter] = useState(""); // State for status filter
+    const [appointmentCounts, setAppointmentCounts] = useState({});
 
     // Function to fetch data from Firestore
     const fetchData = async () => {
@@ -41,8 +42,26 @@ function App() {
                 id: doc.id,
                 ...doc.data(),
             }));
-            setData(items);
-            setLocalData(items); // Initialize localData with the fetched data
+
+            // Sort the data by date and time in descending order (newest to oldest)
+            const sortedData = items.sort((a, b) => {
+                const dateA = a.date ? a.date.toDate() : null;
+                const dateB = b.date ? b.date.toDate() : null;
+
+                return (dateB - dateA) || (b.time - a.time);
+            });
+
+            setData(sortedData);
+            setLocalData(sortedData); // Initialize localData with the sorted data
+
+            // Count appointments per day
+            const counts = {};
+            sortedData.forEach((item) => {
+                const date = item.date ? item.date.toDate().toLocaleDateString() : "N/A";
+                counts[date] = (counts[date] || 0) + 1;
+            });
+            setAppointmentCounts(counts);
+
         } catch (error) {
             console.error("Error fetching data: ", error);
         }
@@ -52,7 +71,7 @@ function App() {
         // Fetch data when the component mounts
         fetchData();
     }, []);
-
+    
     // Function to export data as CSV
     const exportDataAsCSV = () => {
         let csvContent = "data:text/csv;charset=utf-8," +
@@ -166,8 +185,30 @@ function App() {
         prepareRow,
     } = useTable({
         columns,
-        data: applyFilters(), filteredData, // Use the filtered data
+        data: applyFilters() || [], // Use the filtered data if available, otherwise use an empty array
     });
+
+    const chartOptions = {
+        scales: {
+            x: [
+                {
+                    type: 'time',
+                    labels: Object.keys(appointmentCounts),
+                },
+            ],
+            y: [
+                {
+                    type: 'linear',
+                    position: 'left',
+                    ticks: {
+                        beginAtZero: true,
+                        stepSize: 1,
+                    },
+                },
+            ],
+        },
+    };
+
 
     return (
         <div>
@@ -243,24 +284,22 @@ function App() {
                             prepareRow(row);
                             return (
                                 <tr {...row.getRowProps()} style={{ borderBottom: "1px solid black" }}>
-                                    {row.cells.map((cell) => {
-                                        return (
-                                            <td
-                                                {...cell.getCellProps()}
-                                                style={{ padding: "8px", border: "1px solid black", }}
-                                            >
-                                                {cell.render("Cell")}
-                                            </td>
-                                        );
-                                    })}
+                                    {row.cells.map((cell) => (
+                                        <td
+                                            {...cell.getCellProps()}
+                                            style={{ padding: "8px", border: "1px solid black", }}
+                                        >
+                                            {cell.render("Cell")}
+                                        </td>
+                                    ))}
                                 </tr>
                             );
                         })}
                     </tbody>
                 </table>
             </div>
-        </div>
-    );
+        </div> 
+    ); 
 }
 
-export default App;
+export default App; 

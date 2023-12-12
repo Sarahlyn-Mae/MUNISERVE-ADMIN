@@ -152,15 +152,6 @@ const Sidebar = () => {
           News
         </SidebarMenuItem>
 
-        
-        <SidebarMenuItem 
-          onClick={() => setActiveMenu('/services')}
-          isActive={activeMenu === '/services'}
-          >
-            <FontAwesomeIcon icon={faFileLines} className="icon" />
-            Services
-          </SidebarMenuItem>
-
         <Link to="/users" className="link">
         <SidebarMenuItem
             onClick={() => setActiveMenu('/users')}
