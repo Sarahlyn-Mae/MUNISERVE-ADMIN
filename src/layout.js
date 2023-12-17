@@ -13,6 +13,7 @@ import Users from './pages/users';
 import Birth from './pages/birthreg';
 import Marriage from './pages/marriageCert';
 import Death from './pages/deathCert';
+import Job from './pages/job'
 
 const Layout = () => {
     return (
@@ -31,7 +32,7 @@ const Layout = () => {
                         <Route path="/birthreg" component={Birth} />
                         <Route path="/marriageCert" component={Marriage} />
                         <Route path="/deathCert" component={Death} />
-                        
+                        <Route path="/job" component={Job} />
                     </Switch>
                 </MainContent>
             </div>

@@ -3,6 +3,8 @@ import { Link } from "react-router-dom/cjs/react-router-dom.min";
 import Chart from "react-apexcharts";
 import './transactions.css';
 import Sidebar from "../components/sidebar";
+import notification from '../assets/icons/Notification.png';
+import logo from '../assets/logo.png'
 
 function App() {
 
@@ -12,8 +14,15 @@ function App() {
                 <Sidebar />
             </div>
 
-            <div className="container">
-                <h1>Transaction Records</h1>
+            <div className='container'>
+                <div className="header">
+                    <div className='icons'>
+                        <h1>Transactions</h1>
+                        <img src={notification} alt="Notification.png" className='notif' />
+                        <img src={logo} alt="logo" className='account-img' />
+                        <div className='account-name'><h1>Admin</h1></div>
+                    </div>
+                </div>
                 
                 <div className='screen'>
                     <div className="categories-container">

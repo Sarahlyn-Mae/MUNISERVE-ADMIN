@@ -1,0 +1,454 @@
+.sidebar {
+    position: fixed;
+    height: 100%;
+    top: 0;
+    left: 0;
+    overflow-y: auto;
+    z-index: 2; /* Set a higher z-index value for the sidebar */
+}
+
+.container {
+    font-family: Arial, sans-serif;
+    margin-left: 200px;
+    width: 100%;
+    padding: 10px;
+    background-color: #fff;
+    position: relative; /* Add relative positioning for stacking context */
+    z-index: 1; /* Set a lower z-index value for the container */
+    margin-top: 20px;
+    overflow-x: hidden;
+}
+
+.header {
+    font-size: 30px;
+    font-weight: bold;
+    margin-top: 0;
+    display: flex;
+    align-items: center;
+    position: fixed;
+    top: 0;
+    width: 100%;
+    height: 80px;
+    background-color: #fff;
+    z-index: 1; /* Set a lower z-index value for the header */
+    box-shadow: 0px 5px 10px 0px rgba(0, 0, 0, 0.1); /* Add bottom shadow */
+}
+
+.header h2 {
+    font-size: 25px;
+    font-weight: bold;
+    color: #000;
+    margin-top: 15px;
+    margin-left: 60px;
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.icons {
+    display: flex;
+    align-items: center;
+}
+
+.notif-icon {
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    margin-left: 560px; /* Adjust this margin as needed */
+}
+
+.account-img {
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
+    border: 1px gray solid;
+    border-radius: 50px;
+}
+
+.account-name {
+    background-color: #307A59;
+    width: 115px;
+    height: 33px;
+    font-size: 13px;
+    color: #fff;
+    font-weight: 400;
+    text-align: center;
+    border-radius: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+.containers {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+/* Dropdown menu container */
+.dropdown-menu {
+  position: relative;
+  display: inline-block;
+}
+
+/* Dropdown button style */
+.dropdown-menu button {
+  background-color: #3498db;
+  color: #fff;
+  padding: 10px 20px;
+  border: none;
+  cursor: pointer;
+}
+
+/* Dropdown content style */
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #f9f9f9;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+}
+
+/* Show the dropdown content when the dropdown is active */
+.dropdown-menu:hover .dropdown-content {
+  display: block;
+}
+
+/* Dropdown content items (customize as needed) */
+.dropdown-content p {
+  padding: 10px;
+  margin: 0;
+  color: #333;
+}
+
+/* Style for the container or subhead within the dropdown */
+.dropdown-container {
+  padding: 10px;
+  border-top: 1px solid #ddd;
+}
+
+/* Additional styles for the dropdown button when active (customize as needed) */
+.dropdown-menu:hover button {
+  background-color: #2980b9;
+}
+
+.subheads {
+  display: grid;
+  justify-content: center;
+  margin-left: 60px;
+}
+
+.section {
+  margin-bottom: 20px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.form-group {
+  text-align: left;
+}
+
+.form-group label {
+  font-size: 14px;
+  font-weight: light;
+  margin-bottom: 7px;
+}
+
+.placeholder {
+  border: 1px solid #ccc;
+  padding: 10px;
+  border-radius: 10px;
+  background-color: #f8f8f8;
+}
+
+.proof {
+  width: 100%;
+  height: 200px;
+}
+
+.proof img {
+  max-width: 150px;
+  height: 300px;
+  margin-top: 10px;
+}
+
+.btn {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.screen {
+  margin-top: 60px;
+  margin-left: -220px;
+}
+
+.categories-container {
+  display: inline-block;
+  flex-direction: column;
+  margin-bottom: 20px;
+}
+
+.link {
+    text-decoration: none;
+}
+
+.categories1,
+.categories2,
+.categories3,
+.categories4,
+.categories5:hover {
+    background-color: rgb(51, 164, 102), Change the background color on hover as needed */
+}
+
+.categories1,
+.categories2,
+.categories3,
+.categories4,
+.categories5 {
+  display: flex;
+  flex-direction: row;
+  font-family: Arial, sans-serif;
+  background-color: #1e7566;
+  padding: 10px;
+  border: 0 transparent;
+  border-radius: 25px;
+  height: 50px;
+  width: 200px;
+  margin-inline: 7px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 25px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.categories1 h6,
+.categories2 h6,
+.categories3 h6,
+.categories4 h6,
+.categories5 h6 {
+  display: grid;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  font-size: 14px;
+  padding: 10px;
+  border-radius: 5px;
+  color: white;
+  padding: 10px;
+  margin-top: 2px;
+  font-weight: 400;
+}
+
+.link {
+  color: white;
+  text-decoration: none;
+}
+
+.table-container {
+  margin-left: 300px;
+}
+
+.close-button {
+  top: 10px;
+  right: 100px;
+  cursor: pointer;
+  font-size: 18px;
+  color: red;
+  background-color: transparent;
+  border: 0 transparent;
+}
+
+.buttons {
+  text-align: center;
+  justify-content: center;
+  align-items: center;
+}
+
+.completed-button,
+.on-process-button {
+  width: 200px; /* Adjust the width as needed */
+  height: 40px; /* Adjust the height as needed */
+  margin: 10px; /* Adjust the margin as needed */
+  cursor: pointer;
+  border: none;
+  border-radius: 5px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 400;
+}
+
+.view-button {
+  width: 100px;
+  height: 30px;
+  background-color: #164f3d;
+  border-radius: 10px;
+  font-size: 13px;
+  border: 0 transparent;
+  color: #fff;
+}
+
+.completed-button,
+.on-process-button {
+  padding: 10px 20px;
+  background-color: #164f3d;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.completed-button,
+.on-process-button:disabled {
+  background-color: #6a2a2a;
+  cursor: not-allowed;
+}
+
+.proof {
+  margin-bottom: 25px;
+}
+
+.proof img {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* Style for the search input container */
+.search-container {
+  position: relative;
+  display: flex;
+  margin-left: 220px;
+}
+
+/* Style for the search icon */
+.search-icon {
+  position: absolute;
+  top: 45%;
+  left: 80px; /* Adjust the left position as needed */
+  transform: translateY(-50%);
+  color: black; /* Icon color */
+}
+
+/* Add CSS styles for the search input */
+.search-input {
+    padding: 8px 30px;
+    margin-top: 20px;
+    margin-bottom: 25px;
+    border: 1px solid #1f1f1f;
+    border-radius: 25px;
+    width: 100%;
+    height: 25px;
+    max-width: 300px; /* Adjust the width as needed */
+    font-size: 14px;
+    outline: none;
+    margin-left: 70px;
+}
+
+/* Filter container styles */
+.filter-container {
+    display: flex;
+    margin-inline: 20px;
+    align-items: center;
+    margin-top: 15px;
+    margin-bottom: 20px;
+}
+
+.filter-input {
+    padding: 8px;
+    margin-right: 10px;
+    border: 1px solid black;
+    border-radius: 4px;
+    width: 120px;
+    font-size: 11px;
+}
+
+.services {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 15px;
+    margin-left: 275px;
+    text-align: justify;
+    width: 450px;
+}
+
+.request-item {
+    border: 1px solid #ccc;
+    padding: 15px;
+    background-color: #f9f9f9;
+    border-radius: 25px;
+}
+
+.title {
+    display: flex;
+}
+
+.title h3 {
+    margin-left: 200px;
+    margin-top: 7px;
+    font-size: 11px;
+    font-weight: 500;
+    color: gray;
+}
+
+.request-item img {
+    max-width: 24px;
+    max-height: 24px;
+}
+
+.request-item h5 {
+    font-size: 16px;
+    margin: 0;
+    margin-top: 3px;
+    margin-left: 7px;
+    margin-bottom: 7px;
+}
+
+.request-item p {
+    font-size: 14px;
+    margin-top: 10px;
+    line-height: 20px;
+}
+
+.check {
+    background-color: #447D60;
+    color: white;
+    font-size: 14px;
+    border: none;
+    border-radius: 25px;
+    width: 120px;
+    height: 35px;
+    margin-left: 320px;
+}
+
+.check:hover {
+    background-color: #93C49E;
+    color: black;
+}
+
+.app-container {
+  display: flex;
+}
+
+.main-content {
+  flex-grow: 1;
+}
+
+.screen {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 20px;
+}

@@ -8,6 +8,8 @@ import './appointment.css';
 import Sidebar from "../components/sidebar";
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import notification from '../assets/icons/Notification.png';
+import logo from '../assets/logo.png'
 
 // Firebase configuration
 const firebaseConfig = {
@@ -236,6 +238,10 @@ function App() {
                     }
                 },
             },
+            {
+                Header: "Status",
+                accessor: "status",
+            },
             // ... other columns ...
         ],
         []
@@ -287,11 +293,19 @@ function App() {
             <div className="sidebar">
                 <Sidebar />
             </div>
-            <div className="container">
-                <h1>Appointment Records</h1>
+
+            <div className='container'>
+                <div className="header">
+                    <div className='icons'>
+                        <h1>Appointments</h1>
+                        <img src={notification} alt="Notification.png" className='notif' />
+                        <img src={logo} alt="logo" className='account-img' />
+                        <div className='account-name'><h1>Admin</h1></div>
+                    </div>
+                </div>
 
                 {/* Search input */}
-                <div className="search-container">
+                <div className="search-containers">
                     <FaSearch className="search-icon"></FaSearch>
                     <input
                         type="text"
@@ -301,15 +315,31 @@ function App() {
                         className="search-input"
                     />
 
-                    {/* Filter input fields or select dropdowns */}
+                    {/* Filter dropdowns */}
                     <div className="filter-container">
-                        <input
-                            type="text"
-                            placeholder="Filter by Department"
+                        <select
                             value={departmentFilter}
                             onChange={(e) => setDepartmentFilter(e.target.value)}
-                            className="filter-input"
-                        />
+                            className="filter-select"
+                        >
+                            <option value="">Filter by Offices</option>
+                            <option value="Municipal Mayor's Office">Municipal mayor's Office</option>
+                            <option value="Municipal Vice Mayor's Office">Municipal Vice Mayor's Office</option>
+                            <option value="Sangguniang Bayan Office">Sangguniang Bayan Office</option>
+                            <option value="Municipal Accountant's Office">Municipal Accountant's Office</option>
+                            <option value="Municipal Agricultural Office">Municipal Agricultural Office</option>
+                            <option value="Municipal Assessor's Office">Municipal Assessor's Office</option>
+                            <option value="Municipal Civil Registrar Office">Municipal Civil Registrar Office</option>
+                            <option value="Municipal Budget Office">Municipal Budget Office</option>
+                            <option value="Municipal Disaster Risk Reduction and Management Office">Municipal Disaster Risk Reduction and Management Office</option>
+                            <option value="Municipal Engineering Office">Municipal Engineering Office</option>
+                            <option value="Municipal Environment and Natural Resources Office">Municipal Environment and Natural Resources Office</option>
+                            <option value="Municipal Health Office">Municipal Health Office</option>
+                            <option value="Municipal Human Resource and Management Office">Municipal Human Resource and Management Office</option>
+                            <option value="Municipal Planning and Development Office">Municipal Planning and Development Office</option>
+                            <option value="Municipal Social Welfare and Development Office">Municipal Social Welfare and Development Office</option>
+                            <option value="Municipal Treasurer's Office">Municipal Treasurer's Office</option>
+                        </select>
                         <input
                             type="text"
                             placeholder="Filter by Date"
@@ -317,22 +347,42 @@ function App() {
                             onChange={(e) => setDateFilter(e.target.value)}
                             className="filter-input"
                         />
-                        <input
-                            type="text"
-                            placeholder="Filter by Personnel"
+                        <select
                             value={personnelFilter}
                             onChange={(e) => setPersonnelFilter(e.target.value)}
-                            className="filter-input"
-                        />
-                        <input
-                            type="text"
-                            placeholder="Filter by Status"
+                            className="filter-select"
+                        >
+                            <option value="">Filter by Personnel</option>
+                            <option value="Hon. Melanie Abarientos-Garcia">Hon. Melanie Abarientos-Garcia</option>
+                            <option value="Hon. Florencia G. Bargo">Hon. Florencia G. Bargo</option>
+                            <option value="Mr. Allan Ronquillo">Mr. Allan Ronquillo</option>
+                            <option value="Ms. Deta P. Gaspar, CPA">Ms. Deta P. Gaspar, CPA</option>
+                            <option value="Engr. Alex B. Idanan">Engr. Alex B. Idanan</option>
+                            <option value="Mr. Elberto R. Adulta">Mr. Elberto R. Adulta</option>
+                            <option value="Mr. Ceasar P. Manalo">Mr. Ceasar P. Manalo</option>
+                            <option value="Mrs. Maria Elinar N. Ilagan">Mrs. Maria Elinar N. Ilagan</option>
+                            <option value="Mr. Laurence V. Rojo">Mr. Laurence V. Rojo</option>
+                            <option value="Engr. Fernando P Lojo Jr.">Engr. Fernando P Lojo Jr.</option>
+                            <option value="Dr. Jeffrey James B. Motos">Dr. Jeffrey James B. Motos</option>
+                            <option value="Ms. Ma. Glaiza C. Bermudo">Ms. Ma. Glaiza C. Bermudo</option>
+                            <option value="Eng. Paz C. Caguimbal">Eng. Paz C. Caguimbal</option>
+                            <option value="Ms.Ana C. Mangubat, RSW">Ms.Ana C. Mangubat, RSW</option>
+                            <option value="Mr. Dante A. Cadag">Mr. Dante A. Cadag</option>
+                        </select>
+                        <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
-                            className="filter-input"
-                        />
+                            className="filter-select"
+                        >
+                            <option value="">Filter by Status</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Approved">Approved</option>
+                            <option value="Disapproved">Disapproved</option>
+                            {/* Add more options as needed */}
+                        </select>
                     </div>
                 </div>
+
                 {/* DropdownButton component for export */}
                 <DropdownButton handleExport={handleExport} />
 

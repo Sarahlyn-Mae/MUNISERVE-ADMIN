@@ -138,12 +138,20 @@ function App() {
                 accessor: "c_birthplace",
             },
             {
-                Header: "Mother's Name",
-                accessor: "m_name",
-            },
-            {
-                Header: "Father's Name",
-                accessor: "f_name",
+                Header: "Date of Application",
+                accessor: "createdAt",
+                Cell: ({ value }) => {
+                    if (value) {
+                        const date = value.toDate ? value.toDate() : value; // Check if toDate() is available
+                        if (isValidDate(date)) {
+                            return date.toLocaleDateString();
+                        } else {
+                            return "Invalid Date";
+                        }
+                    } else {
+                        return "N/A"; // Handle the case where value is null or undefined
+                    }
+                },
             },
             {
                 Header: "Status",

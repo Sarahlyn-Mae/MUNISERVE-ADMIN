@@ -143,14 +143,6 @@ const Sidebar = () => {
             Appointments
           </SidebarMenuItem>
         </Link>
-        
-        <SidebarMenuItem
-          onClick={() => setActiveMenu('/news')}
-          isActive={activeMenu === '/news'}
-        >
-          <FontAwesomeIcon icon={faNewspaper} className="icon" />
-          News
-        </SidebarMenuItem>
 
         <Link to="/users" className="link">
         <SidebarMenuItem
