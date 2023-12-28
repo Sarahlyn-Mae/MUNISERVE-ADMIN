@@ -8,6 +8,8 @@ import { FaSearch } from 'react-icons/fa'; // Import icons
 import { Link } from "react-router-dom/cjs/react-router-dom.min";
 import './transactions.css';
 import Sidebar from "../components/sidebar";
+import notification from '../assets/icons/Notification.png';
+import logo from '../assets/logo.png';
 
 // Firebase configuration
 const firebaseConfig = {
@@ -115,8 +117,20 @@ function App() {
                 accessor: (row, index) => index + 1, // Calculate row number
             },
             {
-                Header: "Name",
-                accessor: "rname",
+                Header: "Name of Applicant",
+                accessor: "userName",
+            },
+            {
+                Header: "Residency",
+                accessor: "userBarangay",
+            },
+            {
+                Header: "Mobile No.",
+                accessor: "userContact",
+            },
+            {
+                Header: "Email",
+                accessor: "userEmail",
             },
             {
                 Header: "Date of Application",
@@ -202,8 +216,15 @@ function App() {
                 <Sidebar />
             </div>
 
-            <div className="container">
-                <h1>Marriage Certificate Transaction Records</h1>
+            <div className='container'>
+                <div className="header">
+                    <div className='icons'>
+                        <h1>Transactions</h1>
+                        <img src={notification} alt="Notification.png" className='notif' />
+                        <img src={logo} alt="logo" className='account-img' />
+                        <div className='account-name'><h1>Admin</h1></div>
+                    </div>
+                </div>
 
                 <div className='screen'>
                     <div className="categories-container">
@@ -215,13 +236,13 @@ function App() {
 
                         <Link to="/marriageCert" className="link">
                             <button className="categories1">
-                                <h5>Marriage Certificate</h5>
+                                <h5>Certificate of Marriage</h5>
                             </button>
                         </Link>
 
                         <Link to="/deathCert" className="link">
                             <button className="categories1">
-                                <h5>Certificate of Death Certificate</h5>
+                                <h5>Certificate of Death</h5>
                             </button>
                         </Link>
 
@@ -239,7 +260,11 @@ function App() {
                     </div>
                 </div>
 
-                <div className="search-container">
+                <div>
+                    <h1>Marriage Certificate</h1>
+                </div>
+
+                <div className="searches">
                     <FaSearch className="search-icon"></FaSearch>
                     <input
                         type="text"

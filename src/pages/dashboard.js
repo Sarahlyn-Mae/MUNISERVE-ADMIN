@@ -377,4 +377,4 @@ const Dashboard = ({ count }) => {
   );
 }
 
-export default Dashboard; 
+export default Dashboard;

@@ -1,16 +1,21 @@
-import './App.css';
-import Layout from './layout'
-//import Sidebar from './components/sidebar';
-//import Dashboard from './pages/dashboard';
-//import Login from './pages/login';
-//import Signup from './pages/signup';
-//import { BrowserRouter as Router, Route, Switch, Link } from 'react-router-dom';
-
+import React from 'react';
+import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
+import Signup from './pages/signup';
+import Login from './pages/login';
 
 function App() {
-  return (
-    <Layout />
-  );
+
+  <div><Login/></div>
+
+    return (
+        <Router>
+            <Switch>
+                <Route path="/signup" component={Signup} />
+                <Route path="/login" component={Login} />
+                {/* Add more routes for other pages as needed */}
+            </Switch>
+        </Router>
+    );
 }
 
 export default App;

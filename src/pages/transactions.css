@@ -47,6 +47,7 @@
     margin-top: 20px;
 }
 
+.notifs,
 .notif {
     width: 30px;
     height: 30px;
@@ -103,19 +104,20 @@ h1 {
 }
 
 /* Style for the search input container */
-.search-container {
+.searches {
     position: relative;
     display: flex;
-    margin-bottom: 0;
-    z-index: 1;
+    justify-content: flex-start;
+    margin-top: 0; 
+    margin-left: 60px;
 }
 
 /* Style for the search icon */
 .search-icon {
   position: absolute;
   top: 45%;
-  left: 80px; /* Adjust the left position as needed */
-  transform: translateY(-50%);
+  left: 200px; /* Adjust the left position as needed */
+  transform: translateY(-70%);
   color: black; /* Icon color */
 }
 
@@ -134,8 +136,8 @@ h1 {
     margin-left: 70px;
 }
 
-table {
-    width: 100%;
+.custom-table {
+    width: 70%;
     border-collapse: collapse;
     margin-left: 70px;
     font-size: 13px;
@@ -378,4 +380,42 @@ label {
 /* Optional: Adjust the width based on your design */
 .col-4 {
   width: calc(50% - 20px); /* 50% width with margin on both sides */
+}
+
+.monthly-chart,
+.reports ,
+.analytics,
+.yearly-barangay-chart {
+    margin-top: 40px;
+    margin-left: 60px;
+    font-size: 30px;
+    font-weight: 600;
+}
+
+.report,
+.analytics {
+    display: flex;
+    justify-content: space-around;
+    width: 100%;
+  }
+  
+  /* Add more specific styles as needed */
+  .day,
+  .week,
+  .month,
+  .year {
+    width: 200px; /* Adjust the width as needed */
+    margin: 10px; /* Adjust the margin as needed */
+  }
+
+.reports h6 {
+    font-size: 15px;
+    font-weight: 500;
+    width: 70px;
+    height: 50px;
+    border: 3px #FFA0A0 solid;
+    border-radius: 50%;
+    text-align: center;
+    padding: 30px;
+    margin-top: 20px;
 }

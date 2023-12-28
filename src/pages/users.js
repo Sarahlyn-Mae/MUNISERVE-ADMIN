@@ -4,8 +4,10 @@ import { getFirestore, collection, getDocs } from "firebase/firestore";
 import { useTable } from "react-table";
 import { FaSearch } from 'react-icons/fa'; // Import icons
 import { saveAs } from 'file-saver'; // Import file-saver for downloading
-import './appointment.css';
+import './transactions.css';
 import Sidebar from "../components/sidebar";
+import notification from '../assets/icons/Notification.png';
+import logo from '../assets/logo.png';
 
 // Firebase configuration
 const firebaseConfig = {
@@ -119,8 +121,15 @@ function App() {
             <div className="sidebar">
                 <Sidebar />
             </div>
-            <div className="container">
-                <h1>List of All Users</h1>
+            <div className='container'>
+                <div className="header">
+                    <div className='icons'>
+                        <h1>Users</h1>
+                        <img src={notification} alt="Notification.png" className='notifs' />
+                        <img src={logo} alt="logo" className='account-img' />
+                        <div className='account-name'><h1>Admin</h1></div>
+                    </div>
+                </div>
 
                 {/* Search input */}
                 <div className="search-container">

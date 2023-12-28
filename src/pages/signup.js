@@ -79,8 +79,8 @@ function Signup() {
                 <h3>Sign Up</h3>
                 <h6>To create an account, fill out the required information, including
                     <br /> your email address and a secure password.</h6>
-                <div>
-                    <form onSubmit={handleSubmit}>
+                <div className="sign">
+                    <form onSubmit={handleSubmit} className="signup-form">
                         <div className="icon-input">
                             <FaEnvelope className="input-icon" />
                             <input
@@ -120,10 +120,12 @@ function Signup() {
                     </form>
                 </div>
 
+                <div className="sign">
                 <h4> - or - </h4>
                 <button class="login-with-google-btn" onClick={signInWithGoogle}>
                     Sign up with Google
                 </button>
+                </div>
 
                 <h6>
                     Alreaady have an account? <a href="/login">Login</a>
