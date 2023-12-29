@@ -7,8 +7,7 @@ import { BsClipboardCheckFill, BsClockHistory, BsCheckCircleFill, BsXCircleFill 
   from 'react-icons/bs';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line }
   from 'recharts';
-import firebase from 'firebase/compat/app';
-import 'firebase/auth';
+import useAuth  from '../components/useAuth';
 import 'firebase/firestore';
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, getDocs } from "firebase/firestore";
@@ -30,6 +29,20 @@ const app = initializeApp(firebaseConfig);
 const firestore = getFirestore(app);
 
 const Dashboard = ({ count }) => {
+  const { user } = useAuth();
+  const [userEmail, setUserEmail] = useState('');
+
+  useEffect(() => {
+    const fetchUserEmail = () => {
+      if (user) {
+        const email = user.email;
+        const truncatedEmail = email.length > 7 ? `${email.substring(0, 7)}...` : email;
+        setUserEmail(truncatedEmail);
+      }
+    };
+
+    fetchUserEmail();
+  }, [user]);
 
   const [barChartData, setBarChartData] = useState({
     options: {
@@ -268,7 +281,7 @@ const Dashboard = ({ count }) => {
             <h1>Dashboard</h1>
             <img src={notification} alt="Notification.png" className='notif' />
             <img src={logo} alt="logo" className='account-img' />
-            <div className='account-name'><h1>Admin</h1></div>
+            <div className='account-name'><h1>{userEmail}</h1></div>
           </div>
         </div>
 

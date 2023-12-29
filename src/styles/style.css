@@ -127,6 +127,7 @@
 
 /* Add this CSS to your component's CSS file or a global stylesheet */
 
+.role-selection,
 .icon-input {
   position: relative;
   margin-bottom: 20px;
@@ -137,8 +138,8 @@
 
 .input-icon {
   position: absolute;
-  top: 50%;
-  left: 10px; /* Adjust the left offset as needed */
+  top: 40%;
+  left: 30px; /* Adjust the left offset as needed */
   transform: translateY(-50%);
   font-size: 18px; /* Adjust the font size as needed */
   color: #555; /* Adjust the icon color as needed */
@@ -147,7 +148,8 @@
 
 /* Style the input field to give space for the icon */
 input[type="email"],
-input[type="password"] {
+input[type="password"],
+select {
   padding-left: 40px; /* Adjust the left padding to make space for the icon */
   border: #307a59 1.4px solid;
   border-radius: 5px;

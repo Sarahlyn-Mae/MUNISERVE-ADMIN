@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useHistory } from 'react-router-dom';
 import styled from 'styled-components';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -103,15 +103,20 @@ const BottomMenuItems = styled.div`
 
 const Sidebar = () => {
   const location = useLocation();
+  const history = useHistory();
   const [activeMenu, setActiveMenu] = useState('');
 
   useEffect(() => {
-    // Extract the pathname from the location
     const currentPath = location.pathname;
-
-    // Set the active menu based on the current path
     setActiveMenu(currentPath);
   }, [location]);
+
+  const handleLogout = () => {
+    // Perform logout logic (e.g., sign out from authentication)
+    // After successful logout, navigate to the login page
+    // Replace '/login' with the actual path of your login page
+    history.push('/login');
+  };
 
   return (
     <SidebarContainer>
@@ -172,10 +177,7 @@ const Sidebar = () => {
           <FontAwesomeIcon icon={faGear} className="icon" />
           Settings
         </SidebarMenuItem>
-        <SidebarMenuItem
-          onClick={() => setActiveMenu('/logout')}
-          isActive={activeMenu === '/logout'}
-        >
+        <SidebarMenuItem onClick={handleLogout} isActive={activeMenu === '/logout'}>
           <FontAwesomeIcon icon={faArrowRightFromBracket} className="icon" />
           Logout
         </SidebarMenuItem>

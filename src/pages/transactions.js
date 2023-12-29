@@ -19,6 +19,7 @@ import notification from "../assets/icons/Notification.png";
 import logo from "../assets/logo.png";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import useAuth  from '../components/useAuth';
 
 // Firebase configuration
 const firebaseConfig = {
@@ -48,6 +49,21 @@ function App() {
   const [yearlyDataForBarangay, setYearlyDataForBarangay] = useState([]);
   const [selectedBarangay, setSelectedBarangay] = useState(null);
   const [monthlyDataForBarangay, setMonthlyDataForBarangay] = useState([]);
+
+  const { user } = useAuth();
+  const [userEmail, setUserEmail] = useState('');
+
+  useEffect(() => {
+    const fetchUserEmail = () => {
+      if (user) {
+        const email = user.email;
+        const truncatedEmail = email.length > 7 ? `${email.substring(0, 7)}...` : email;
+        setUserEmail(truncatedEmail);
+      }
+    };
+
+    fetchUserEmail();
+  }, [user]);
 
   useEffect(() => {
     // Fetch and count transactions for the day
