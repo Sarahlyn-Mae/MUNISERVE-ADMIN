@@ -32,7 +32,7 @@
     box-shadow: 0px 5px 10px 0px rgba(0, 0, 0, 0.1); /* Add bottom shadow */
 }
 
-.header h1 {
+.headers h1 {
     font-size: 30px;
     font-weight: bold;
     margin-top: 2px;
@@ -53,6 +53,7 @@
     height: 30px;
     margin-left: 550px;
     cursor: pointer;
+    justify-content: flex-end;
 }
 
 .account-img {
@@ -104,7 +105,16 @@ h1 {
 }
 
 /* Style for the search input container */
-.searches {
+.searches,
+.search-container {
+    position: relative;
+    display: flex;
+    justify-content: flex-start;
+    margin-top: 0; 
+    margin-left: 60px;
+}
+
+.search-containers {
     position: relative;
     display: flex;
     justify-content: flex-start;
@@ -113,10 +123,19 @@ h1 {
 }
 
 /* Style for the search icon */
-.search-icon {
+.search-iconss {
+    position: absolute;
+    top: 45%;
+    left: 20px; /* Adjust the left position as needed */
+    transform: translateY(-70%);
+    color: black; /* Icon color */
+  }
+
+/* Style for the search icon */
+.search-icons {
   position: absolute;
-  top: 45%;
-  left: 200px; /* Adjust the left position as needed */
+  top: 50%;
+  left: 20px; /* Adjust the left position as needed */
   transform: translateY(-70%);
   color: black; /* Icon color */
 }
@@ -128,12 +147,11 @@ h1 {
     margin-bottom: 25px;
     border: 1px solid #1f1f1f;
     border-radius: 25px;
-    width: 100%;
-    height: 25px;
+    height: max-content;
     max-width: 300px; /* Adjust the width as needed */
     font-size: 14px;
     outline: none;
-    margin-left: 70px;
+    margin-left: 80px;
 }
 
 .custom-table {
@@ -271,7 +289,7 @@ h2 {
     margin-top: 5px;
 }
 
-button {
+.view-btn {
     background-color: #1e7566;
     color: #f2f2f2;
     border-radius: 5px;
@@ -280,7 +298,7 @@ button {
     height: 25px;
 }
 
-button:hover {
+.view-btn:hover {
     background-color: #3fc589;
     color: #1a1a1a;
 }
@@ -301,7 +319,7 @@ button:hover {
 .categories3,
 .categories4,
 .categories5:hover {
-    background-color: rgb(51, 164, 102) 185, 106);/* Change the background color on hover as needed */
+    background-color: rgb((51, 164, 102) 185, 106);/* Change the background color on hover as needed */
 }
 
 .categories1,
@@ -340,7 +358,7 @@ button:hover {
   border-radius: 5px;
   color: white;
   padding: 10px;
-  margin-top: 19px;
+  margin-top: 10px;
 }
 
 /* Filter container styles */
@@ -392,6 +410,19 @@ label {
     font-weight: 600;
 }
 
+.container h1 {
+    margin-left: 60px;
+    margin-top: 90px;
+    font-weight: bold;
+    font-size: 30px;
+}
+
+.parts {
+    display: flex;
+    justify-content: space-around;
+    width: 100%;
+    margin-top: 50px;
+}
 .report,
 .analytics {
     display: flex;

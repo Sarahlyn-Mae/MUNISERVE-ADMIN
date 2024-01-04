@@ -1,0 +1,32 @@
+body {
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+    background-color: #f5f5f5;
+  }
+  
+.Form h3{
+    margin-left: 80px;
+}
+
+
+
+ .Form h6{
+    margin-left: 80px;
+ }
+
+.input-email{
+    margin-left: 16px;
+}
+
+.input-password{
+    margin-left: 16px;
+}
+
+.my-button{
+    margin-left: 20px;
+}
+
+.forgot-password{
+    margin-left: 90px;
+    margin-top: 10px;
+}

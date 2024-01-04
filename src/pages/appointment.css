@@ -1,22 +1,93 @@
 .sidebar {
-    position: fixed;
-    height: 100%;
-    top: 0;
-    left: 0;
-    overflow-y: auto;
+  position: fixed;
+  height: 100%;
+  top: 0;
+  left: 0;
+  overflow-y: auto;
+  z-index: 2; /* Set a higher z-index value for the sidebar */
 }
 
 .container {
-    font-family: Arial, sans-serif;
-    margin-left: 200px;
-    width: 1000px;
-    padding: 10px;
+  font-family: Arial, sans-serif;
+  margin-left: 250px;
+  width: 100%;
+  padding: 10px;
+  position: relative; /* Add relative positioning for stacking context */
+  z-index: 1; /* Set a lower z-index value for the container */
 }
 
-h1 {
-    font-size: 24px;
-    margin-left: 80px;
-    margin-top: 15px;
+.header {
+  font-size: 30px;
+  font-weight: bold;
+  margin-top: 0;
+  margin-left: 40px;
+  display: flex;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  width: 100%;
+  height: 80px;
+  background-color: #fff;
+  z-index: 1; /* Set a lower z-index value for the header */
+  box-shadow: 0px 5px 10px 0px rgba(0, 0, 0, 0.1); /* Add bottom shadow */
+}
+
+.header h1 {
+  font-size: 30px;
+  font-weight: bold;
+  margin-top: 2px;
+  margin-left: 60px;
+  display: flex;
+  align-items: center;
+}
+
+.icons {
+  flex-direction: row;
+  display: flex;
+  margin-top: 20px;
+}
+
+.notifs,
+.notif {
+  width: 30px;
+  height: 30px;
+  margin-left: 550px;
+  cursor: pointer;
+}
+
+.account-img {
+  width: 32px;
+  height: 32px;
+  margin-left: 20px;
+  cursor: pointer;
+  position: relative;
+  z-index: 2;
+  border: 1px gray solid;
+  border-radius: 50px;
+}
+
+.account-name {
+  background-color: #307A59;
+  width: 115px;
+  height: 33px;
+  font-size: 14px;
+  color: #fff;
+  font-weight: 400;
+  text-align: center;
+  border-radius: 50px;
+  display: flex;
+  justify-content: center; /* Center the content horizontally */
+  align-items: center; /* Center the content vertically */
+  margin-left: -25px;
+  position: relative;
+  z-index: 1;
+}
+
+.account-name h1 {
+  margin: 0; 
+  font-size: 14px;
+  font-weight: 400;
+  color: #fff;
 }
 
 /* Style for the search input container */
@@ -60,7 +131,7 @@ h1 {
   border: 1px solid #1f1f1f;
   border-radius: 25px;
   width: 100%;
-  height: 25px;
+  height: max-content;
   font-size: 14px;
   outline: none;
   margin-left: 10px; /* Adjusted to align with the left side */
@@ -70,29 +141,42 @@ h1 {
 .filter-container {
     display: flex;
     align-items: center;
-    margin-top: 15px;
     margin-bottom: 20px;
 }
 
-.filter-input,
-.filter-select {
+.filter-selects, 
+.filter-inputs {
     padding: 8px;
     margin-right: 10px;
     border: 1px solid black;
     border-radius: 4px;
     width: 120px;
+    height: max-content;
     font-size: 11px;
 }
 
-/* Search by Name input styles */
-.search-input {
-    padding: 8px 30px;
-    border: 1px solid #1f1f1f;
-    border-radius: 25px;
-    width: 100%;
-    height: 25px;
-    font-size: 14px;
-    outline: none;
+/* Filter container styles */
+.filter-containers {
+  display: flex;
+  margin-inline: 30px;
+  align-items: center;
+  margin-bottom: 20px;
+  margin-right: 60px;
+  width: 220px;
+}
+
+.filters {
+  padding: 8px;
+  margin-right: 5px;
+  border: 1px solid black;
+  border-radius: 4px;
+  width: 200px;
+  font-size: 14px;
+  height: fit-content;
+}
+
+label {
+  font-size: 15px;
 }
 
 .custom-table {
@@ -100,6 +184,22 @@ h1 {
     border-collapse: collapse;
     padding: 10px;
 }
+
+.custom-table thead th {
+  background-color: transparent;
+  color: #000;
+  border: 1px #000 solid;
+}
+
+/* Optional: Style the table rows */
+.custom-table tbody tr {
+  background-color: #f2f2f2;
+  border: 1px #000 solid;
+}
+
+.custom-table tbody tr:hover {
+  background-color: #ddd;
+} 
 
 /*table*/
 td {
@@ -211,3 +311,89 @@ tr:hover {
     display: block;
     color: #ddd;
   }
+
+  .folders {
+    margin-left: 60px;
+    margin-top: 90px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* Set 4 columns in the grid */
+    gap: 10px;
+  }
+  
+  .folds {
+    border: 1px #1e7566 solid;
+    background-color: transparent;
+    display: flex;
+    flex-direction: row;
+    width: 200px;
+    height: 50px; /* Adjust height based on your content */
+    border-radius: 10px;
+  }
+
+  .folds:hover {
+    background-color: #1e7566;
+    color: #fff;
+  }
+  
+  .folds h1 {
+    font-size: 15px;
+    font-weight: 500;
+    margin-left: 10px;
+    margin-top: 15px;
+  }
+  
+  .folds .folder {
+    color: #1a1a1a;
+    width: 25px;
+    height: 25px;
+    justify-content: center;
+    align-items: center;
+    margin: 10px; /* Adjust margin as needed */
+  }
+
+  .folds .folder:hover {
+    color: #fff;
+  }
+
+  /* Position the pagination */
+.pagination {
+  margin-top: 10px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Optional: Add styling to the pagination items */
+.pagination .page-item {
+  margin-right: 3px;
+}
+
+/* Optional: Add styling to the active pagination item */
+.pagination .page-item.active .page-link {
+  background-color: #8acaac;
+  border-color: #1e7566;
+}
+
+/* Optional: Add styling to the pagination links */
+.pagination .page-link {
+  color: #000;
+  background-color: #fff;
+  border: 1px solid #dee2e6;
+}
+
+.pagination .page-link:hover {
+  z-index: 2;
+  color: #000;
+  text-decoration: none;
+  background-color: #e9ecef;
+  border-color: #dee2e6;
+}
+
+.title {
+  margin-top: 90px;
+  text-align: center;
+}
+
+.title h1 {
+  font-weight: bold;
+}

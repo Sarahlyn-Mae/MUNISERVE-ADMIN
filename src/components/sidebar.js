@@ -160,8 +160,8 @@ const Sidebar = () => {
           </SidebarMenuItem>
         </Link>
 
-        <Link to="/appointments" className="link">
-          <SidebarMenuItem isActive={activeMenu === '/appointments'}>
+        <Link to="/reports" className="link">
+          <SidebarMenuItem isActive={activeMenu === '/reports'}>
             <FontAwesomeIcon icon={faFolder} className="icon" />
             Reports
           </SidebarMenuItem>

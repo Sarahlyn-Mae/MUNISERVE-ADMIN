@@ -10,6 +10,9 @@ import './transactions.css';
 import Sidebar from "../components/sidebar";
 import notification from '../assets/icons/Notification.png';
 import logo from '../assets/logo.png';
+import { Table, Pagination } from "react-bootstrap";
+import "bootstrap/dist/css/bootstrap.min.css";
+import jsPDF from "jspdf";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -71,22 +74,206 @@ function App() {
         fetchData();
     }, []);
 
-    // Function to export data as CSV
-    const exportDataAsCSV = () => {
-        let csvContent = "data:text/csv;charset=utf-8," +
-            "Childname,Birthdate,Birth Place,Sex,Type of Birth,Weight,Birth Order,Mother's Name,Mother's Age,Mother's Occupation,Mother's Citizenship,Mother's Religion,Mother's Total Children,Father's Name,Father's Age,Father's Occupation,Father's Citizenship,Father's Religion,Place of Marriage,Birth Attendant,Status\n"; // CSV header row
+  // PDF File
+  const exportDataAsPDF = () => {
+    const columns = [
+        {
+            Header: "No.", // Auto-numbering column
+            accessor: (row, index) => index + 1, // Calculate row number
+        },
+        {
+            Header: "Name of Applicant",
+            accessor: "userName",
+        },
+        {
+            Header: "Residency",
+            accessor: "userBarangay",
+        },
+        {
+            Header: "Mobile No.",
+            accessor: "userContact",
+        },
+        {
+            Header: "Email",
+            accessor: "userEmail",
+        },
+        {
+            Header: "Date of Application",
+            accessor: "createdAt",
+            Cell: ({ value }) => {
+                if (value) {
+                    const date = value.toDate ? value.toDate() : value; // Check if toDate() is available
+                    if (isValidDate(date)) {
+                        return date.toLocaleDateString();
+                    } else {
+                        return "Invalid Date";
+                    }
+                } else {
+                    return "N/A"; // Handle the case where value is null or undefined
+                }
+            },
+        },
+        {
+            Header: "Status",
+            accessor: "status",
+        },
+        {
+            Header: "Actions",
+            accessor: "actions",
+            Cell: ({ row }) => (
+                <button onClick={() => openModal(row)}>View</button>
+            ),
+        },
+      // ... other columns ...
+    ];
 
-        // Add data rows to CSV
-        data.forEach((item) => {
-            const row = Object.values(item).map(value => `"${value}"`).join(",") + "\n";
-            csvContent += row;
-        });
+    // Create a PDF document
+    const pdfDoc = new jsPDF();
 
-        // Create a data URI and trigger download
-        const encodedURI = encodeURI(csvContent);
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
-        saveAs(blob, 'Transaction_Records.csv');
-    };
+    // Set font size and style
+    pdfDoc.setFontSize(12);
+    pdfDoc.setFont("helvetica", "bold");
+
+    // Add header row to PDF as a table
+    pdfDoc.autoTable({
+      head: [columns.map((column) => column.Header)],
+      startY: 10,
+      styles: { fontSize: 12, cellPadding: 2 },
+    });
+
+    // Add data rows to PDF as a table
+    const dataRows = data.map((item) =>
+      columns.map((column) => {
+        // Format date as a string if it exists
+        if (column.accessor === "date" && item[column.accessor]) {
+          return item[column.accessor].toDate().toLocaleDateString() || "";
+        }
+        return item[column.accessor] || "";
+      })
+    );
+
+    pdfDoc.autoTable({
+      body: dataRows,
+      startY: pdfDoc.autoTable.previous.finalY + 2,
+      styles: { fontSize: 10, cellPadding: 2 },
+    });
+
+    // Save the PDF
+    pdfDoc.save("DeathCert_Records.pdf");
+  };
+
+  // Function to export data as CSV
+  const exportDataAsCSV = () => {
+    const columns = [
+        {
+            Header: "No.", // Auto-numbering column
+            accessor: (row, index) => index + 1, // Calculate row number
+        },
+        {
+            Header: "Name of Applicant",
+            accessor: "userName",
+        },
+        {
+            Header: "Residency",
+            accessor: "userBarangay",
+        },
+        {
+            Header: "Mobile No.",
+            accessor: "userContact",
+        },
+        {
+            Header: "Email",
+            accessor: "userEmail",
+        },
+        {
+            Header: "Date of Application",
+            accessor: "createdAt",
+            Cell: ({ value }) => {
+                if (value) {
+                    const date = value.toDate ? value.toDate() : value; // Check if toDate() is available
+                    if (isValidDate(date)) {
+                        return date.toLocaleDateString();
+                    } else {
+                        return "Invalid Date";
+                    }
+                } else {
+                    return "N/A"; // Handle the case where value is null or undefined
+                }
+            },
+        },
+        {
+            Header: "Status",
+            accessor: "status",
+        },
+        {
+            Header: "Actions",
+            accessor: "actions",
+            Cell: ({ row }) => (
+                <button onClick={() => openModal(row)}>View</button>
+            ),
+        },
+      // ... other columns ...
+    ];
+
+    // Create CSV header row based on column headers and widths
+    let csvContent =
+      columns.map((column) => `${column.Header || ""}`).join(",") + "\n";
+    csvContent +=
+      columns.map((column) => `${column.width || ""}`).join(",") + "\n";
+
+    // Add data rows to CSV
+    data.forEach((item) => {
+      const row =
+        columns
+          .map((column) => {
+            // Format date as a string if it exists
+            let cellContent = item[column.accessor] || "";
+
+            // Truncate cell content if it exceeds a certain length (adjust the length as needed)
+            const maxLength = column.width || 100; // Use column width as max length
+            if (cellContent.length > maxLength) {
+              cellContent = cellContent.substring(0, maxLength - 100) + "...";
+            }
+
+            if (column.accessor === "date" && item[column.accessor]) {
+              return `${
+                item[column.accessor].toDate().toLocaleDateString() || ""
+              }`;
+            }
+            return `${cellContent}`;
+          })
+          .join(",") + "\n";
+
+      csvContent += row;
+    });
+
+    // Create a Blob containing the CSV data
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
+
+    // Create a download link
+    const link = document.createElement("a");
+    link.href = window.URL.createObjectURL(blob);
+    link.download = "DeathCert_Records.csv";
+
+    // Append the link to the document
+    document.body.appendChild(link);
+
+    // Trigger a click event on the link to initiate the download
+    link.click();
+
+    // Remove the link from the document
+    document.body.removeChild(link);
+  };
+
+  // Function to handle export based on type
+  const handleExport = (exportType) => {
+    if (exportType === "pdf") {
+      exportDataAsPDF();
+    } else if (exportType === "csv") {
+      exportDataAsCSV();
+    }
+    // Add more conditions for other export types if needed
+  };
 
     const openModal = async (row) => {
         setSelectedRow(row);
@@ -156,7 +343,7 @@ function App() {
                 Header: "Actions",
                 accessor: "actions",
                 Cell: ({ row }) => (
-                    <button onClick={() => openModal(row)}>View</button>
+                    <button onClick={() => openModal(row)} className="view-btn">View</button>
                 ),
             },
         ],
@@ -183,6 +370,7 @@ function App() {
         );
     });
 
+    // React Table configuration
     const {
         getTableProps,
         getTableBodyProps,
@@ -193,6 +381,15 @@ function App() {
         columns,
         data: filteredData,
     });
+
+    // Pagination
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = rows.slice(indexOfFirstItem, indexOfLastItem);
+
+    const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
     const handleYearFilterChange = (event) => {
         setSelectedYearFilter(event.target.value);
@@ -265,7 +462,7 @@ function App() {
                 </div>
 
                 <div className="searches">
-                    <FaSearch className="search-icon"></FaSearch>
+                    <FaSearch className="search-icons"></FaSearch>
                     <input
                         type="text"
                         placeholder="Search by Name"
@@ -350,11 +547,12 @@ function App() {
                             <option value="Pending">Pending</option>
                         </select>
                     </div>
+
+                    <DropdownButton handleExport={handleExport} />
+
                 </div>
 
-                <button className="btn" onClick={exportDataAsCSV}>Export as CSV</button>
-
-                {isModalOpen ? ( // Render modal content if the modal is open
+                {isModalOpen && selectedRow ? ( // Render modal content if the modal is open
                     <div className="modal">
                         <div className="modal-content">
                             <h2>Full Details</h2>
@@ -451,15 +649,12 @@ function App() {
                     </div>
                 ) : (
                     // Render the table if the modal is not open
-                    <table {...getTableProps()} style={{ border: "1px solid black" }}>
+                    <Table striped bordered hover {...getTableProps()} className="custom-table">
                         <thead>
                             {headerGroups.map((headerGroup) => (
                                 <tr {...headerGroup.getHeaderGroupProps()}>
                                     {headerGroup.headers.map((column) => (
-                                        <th
-                                            {...column.getHeaderProps()}
-                                            style={{ borderBottom: "1px solid black" }}
-                                        >
+                                        <th {...column.getHeaderProps()}>
                                             {column.render("Header")}
                                         </th>
                                     ))}
@@ -467,39 +662,54 @@ function App() {
                             ))}
                         </thead>
                         <tbody {...getTableBodyProps()}>
-                            {rows.map((row) => {
+                            {currentItems.map((row) => {
                                 prepareRow(row);
                                 return (
-                                    <tr
-                                        {...row.getRowProps()}
-                                        style={{ borderBottom: "1px solid black" }}
-                                    >
-                                        {row.cells.map((cell) => {
-                                            return (
-                                                <td
-                                                    {...cell.getCellProps()}
-                                                    style={{ padding: "8px", border: "1px solid black" }}
-                                                >
-                                                    {cell.render("Cell")}
-                                                </td>
-                                            );
-                                        })}
+                                    <tr {...row.getRowProps()}>
+                                        {row.cells.map((cell) => (
+                                            <td {...cell.getCellProps()}>{cell.render("Cell")}</td>
+                                        ))}
                                     </tr>
                                 );
                             })}
-                                {filteredData.length === 0 && (
-                                    <tr>
-                                        <td colSpan="8" style={{ textAlign: "center" }}>
-                                            No matching records found.
-                                        </td>
-                                    </tr>
-                                )}
+                            {filteredData.length === 0 && (
+                                <tr>
+                                    <td colSpan="8" style={{ textAlign: "center" }}>
+                                        No matching records found.
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
-                    </table>
+                    </Table>
                 )}
+                
+                <Pagination>
+                    {[...Array(Math.ceil(rows.length / itemsPerPage)).keys()].map(
+                        (number) => (
+                            <Pagination.Item
+                                key={number + 1}
+                                active={number + 1 === currentPage}
+                                onClick={() => paginate(number + 1)}
+                            >
+                                {number + 1}
+                            </Pagination.Item>
+                        )
+                    )}
+                </Pagination>
             </div>
         </div>
     );
-}
+};
+
+const DropdownButton = ({ handleExport }) => (
+    <div className="dropdown">
+      <button className="dropbtn">Export File</button>
+      <div className="dropdown-content">
+        <button onClick={() => handleExport("pdf")}>Export as PDF</button>
+        <button onClick={() => handleExport("csv")}>Export as CSV</button>
+        {/* Add more buttons for other export types */}
+      </div>
+    </div>
+  );
 
 export default App;

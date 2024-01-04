@@ -1049,7 +1049,7 @@ function App() {
       <div className="container">
         <div className="header">
           <div className="icons">
-            <h1>Transactions</h1>
+            <h1>Reports</h1>
             <img src={notification} alt="Notification.png" className="notif" />
             <img src={logo} alt="logo" className="account-img" />
             <div className="account-name">
@@ -1058,85 +1058,7 @@ function App() {
           </div>
         </div>
 
-        <div className="screen">
-          <div className="categories-container">
-            <Link to="/birthReg" className="link">
-              <button className="categories1">
-                <h5>Certificate of Live Birth</h5>
-              </button>
-            </Link>
-
-            <Link to="/marriageCert" className="link">
-              <button className="categories1">
-                <h5>Marriage Certificate</h5>
-              </button>
-            </Link>
-
-            <Link to="/deathCert" className="link">
-              <button className="categories1">
-                <h5>Certificate of Death Certificate</h5>
-              </button>
-            </Link>
-
-            <Link to="/businessPermit" className="link">
-              <button className="categories1">
-                <h5>Business Permit</h5>
-              </button>
-            </Link>
-
-            <Link to="/job" className="link">
-              <button className="categories1">
-                <h5>Job Application</h5>
-              </button>
-            </Link>
-          </div>
-        </div>
-
-        <div className="reports">
-          Analytics
-          <div className="report">
-            <div className="day">
-              <Chart
-                options={chartData.day.options}
-                series={chartData.day.series}
-                type="radialBar"
-                height="200"
-              />
-            </div>
-            <div className="week">
-              <Chart
-                options={chartData.week.options}
-                series={chartData.week.series}
-                type="radialBar"
-                height="200"
-              />
-            </div>
-            <div className="month">
-              <Chart
-                options={chartData.month.options}
-                series={chartData.month.series}
-                type="radialBar"
-                height="200"
-              />
-            </div>
-            <div className="year">
-              <Chart
-                options={chartData.year.options}
-                series={chartData.year.series}
-                type="radialBar"
-                height="200"
-              />
-            </div>
-            <div className="users-chart">
-              <Chart
-                options={chartData.users.options}
-                series={chartData.users.series}
-                type="radialBar"
-                height="200"
-              />
-            </div>
-          </div>
-        </div>
+        <h1>Analytics for 2023</h1>
 
         <div className="analytics">
           <div className="monthly-status-chart">

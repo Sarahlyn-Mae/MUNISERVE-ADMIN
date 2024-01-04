@@ -117,7 +117,7 @@ function Signup() {
         <div className="sign">
           <form onSubmit={handleSubmit} className="signup-form">
             <div className="icon-input">
-              <FaEnvelope className="input-icon" />
+              <FaEnvelope className="input-icons" />
               <input
                 type="email"
                 placeholder="Enter your email"
@@ -127,24 +127,7 @@ function Signup() {
               />
             </div>
             <div className="icon-input">
-              <FaUser className="input-icon" />
-              <div className="role-selection">
-                <label>Select Role:</label>
-                <select
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  required
-                >
-                  <option value="" disabled>
-                    Choose a role
-                  </option>
-                  <option value="CivilRegistrar">Civil Registrar</option>
-                  <option value="HRDepartment">HR Department</option>
-                </select>
-              </div>
-            </div>
-            <div className="icon-input">
-              <FaLock className="input-icon" />
+              <FaLock className="input-icons" />
               <input
                 type="password"
                 placeholder="Enter your password"
@@ -154,7 +137,7 @@ function Signup() {
               />
             </div>
             <div className="icon-input">
-              <FaLock className="input-icon" />
+              <FaLock className="input-icons" />
               <input
                 type="password"
                 placeholder="Re-enter your password"

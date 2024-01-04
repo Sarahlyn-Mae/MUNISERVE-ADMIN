@@ -9,6 +9,7 @@ import { useHistory, Link, Redirect } from "react-router-dom";
 import { signInWithEmailAndPassword, getAuth } from "firebase/auth";
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import './login.css';
 
 // Firebase configuration
 const firebaseConfig = {
@@ -88,8 +89,9 @@ function Login() {
         <div>
           <form onSubmit={handleSubmit} className="signup-form">
             <div className="icon-input">
-              <FaEnvelope className="input-icon" />
+              <FaEnvelope className="input-icon" style={{ marginLeft: '3px'}}/>
               <input
+               className="input-email"
                 type="email"
                 placeholder="Enter your email"
                 value={email}
@@ -98,8 +100,9 @@ function Login() {
               />
             </div>
             <div className="icon-input">
-              <FaLock className="input-icon" />
+              <FaLock className="input-icon" style={{ marginLeft: '3px'}}/>
               <input
+                className="input-password"
                 type="password"
                 placeholder="Enter your password"
                 value={password}
@@ -114,9 +117,11 @@ function Login() {
               Login
             </button>
           </form>
+          
           <div className="forgot-password">
-            <a href="/forgot-passwords">Forgot Password?</a>
-          </div>
+      <Link to="/forgot-password">Forgot Password?</Link>
+    </div>
+        
 
           <h6>
             Don't have an account yet? <Link to="/signup">Signup</Link>

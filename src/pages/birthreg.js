@@ -10,6 +10,7 @@ import './transactions.css';
 import Sidebar from "../components/sidebar";
 import notification from '../assets/icons/Notification.png';
 import logo from '../assets/logo.png';
+import jsPDF from "jspdf";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -70,22 +71,238 @@ function App() {
         fetchData();
     }, []);
 
-    // Function to export data as CSV
-    const exportDataAsCSV = () => {
-        let csvContent = "data:text/csv;charset=utf-8," +
-            "Childname,Birthdate,Birth Place,Sex,Type of Birth,Weight,Birth Order,Mother's Name,Mother's Age,Mother's Occupation,Mother's Citizenship,Mother's Religion,Mother's Total Children,Father's Name,Father's Age,Father's Occupation,Father's Citizenship,Father's Religion,Place of Marriage,Birth Attendant,Status\n"; // CSV header row
+  // PDF File
+  const exportDataAsPDF = () => {
+    const columns = [
+        {
+            Header: "Child Name",
+            accessor: "childname",
+        },
+        {
+            Header: "Birth Date",
+            accessor: "c_birthdate",
+            Cell: ({ value }) => {
+                if (value) {
+                    const date = value.toDate ? value.toDate() : value; // Check if toDate() is available
+                    if (isValidDate(date)) {
+                        return date.toLocaleDateString();
+                    } else {
+                        return "Invalid Date";
+                    }
+                } else {
+                    return "N/A"; // Handle the case where value is null or undefined
+                }
+            },
+        },
+        {
+            Header: "Residency",
+            accessor: "userBarangay",
+        },
+        {
+            Header: "Mobile No.",
+            accessor: "userContact",
+        },
+        {
+            Header: "Email",
+            accessor: "userEmail",
+        },
+        {
+            Header: "Name of Applicant",
+            accessor: "userName",
+        },
+        {
+            Header: "Date of Application",
+            accessor: "createdAt",
+            Cell: ({ value }) => {
+                if (value) {
+                    const date = value.toDate ? value.toDate() : value; // Check if toDate() is available
+                    if (isValidDate(date)) {
+                        return date.toLocaleDateString();
+                    } else {
+                        return "Invalid Date";
+                    }
+                } else {
+                    return "N/A"; // Handle the case where value is null or undefined
+                }
+            },
+        },
+        {
+            Header: "Status",
+            accessor: "status",
+        },
+        {
+            Header: "Actions",
+            accessor: "actions",
+            Cell: ({ row }) => (
+                <button onClick={() => openModal(row)}>View</button>
+            ),
+        },
+      // ... other columns ...
+    ];
 
-        // Add data rows to CSV
-        data.forEach((item) => {
-            const row = Object.values(item).map(value => `"${value}"`).join(",") + "\n";
-            csvContent += row;
-        });
+    // Create a PDF document
+    const pdfDoc = new jsPDF();
 
-        // Create a data URI and trigger download
-        const encodedURI = encodeURI(csvContent);
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
-        saveAs(blob, 'Transaction_Records.csv');
-    };
+    // Set font size and style
+    pdfDoc.setFontSize(12);
+    pdfDoc.setFont("helvetica", "bold");
+
+    // Add header row to PDF as a table
+    pdfDoc.autoTable({
+      head: [columns.map((column) => column.Header)],
+      startY: 10,
+      styles: { fontSize: 12, cellPadding: 2 },
+    });
+
+    // Add data rows to PDF as a table
+    const dataRows = data.map((item) =>
+      columns.map((column) => {
+        // Format date as a string if it exists
+        if (column.accessor === "date" && item[column.accessor]) {
+          return item[column.accessor].toDate().toLocaleDateString() || "";
+        }
+        return item[column.accessor] || "";
+      })
+    );
+
+    pdfDoc.autoTable({
+      body: dataRows,
+      startY: pdfDoc.autoTable.previous.finalY + 2,
+      styles: { fontSize: 10, cellPadding: 2 },
+    });
+
+    // Save the PDF
+    pdfDoc.save("BirthReg_Records.pdf");
+  };
+
+  // Function to export data as CSV
+  const exportDataAsCSV = () => {
+    const columns = [
+        {
+            Header: "Child Name",
+            accessor: "childname",
+        },
+        {
+            Header: "Birth Date",
+            accessor: "c_birthdate",
+            Cell: ({ value }) => {
+                if (value) {
+                    const date = value.toDate ? value.toDate() : value; // Check if toDate() is available
+                    if (isValidDate(date)) {
+                        return date.toLocaleDateString();
+                    } else {
+                        return "Invalid Date";
+                    }
+                } else {
+                    return "N/A"; // Handle the case where value is null or undefined
+                }
+            },
+        },
+        {
+            Header: "Residency",
+            accessor: "userBarangay",
+        },
+        {
+            Header: "Mobile No.",
+            accessor: "userContact",
+        },
+        {
+            Header: "Email",
+            accessor: "userEmail",
+        },
+        {
+            Header: "Name of Applicant",
+            accessor: "userName",
+        },
+        {
+            Header: "Date of Application",
+            accessor: "createdAt",
+            Cell: ({ value }) => {
+                if (value) {
+                    const date = value.toDate ? value.toDate() : value; // Check if toDate() is available
+                    if (isValidDate(date)) {
+                        return date.toLocaleDateString();
+                    } else {
+                        return "Invalid Date";
+                    }
+                } else {
+                    return "N/A"; // Handle the case where value is null or undefined
+                }
+            },
+        },
+        {
+            Header: "Status",
+            accessor: "status",
+        },
+        {
+            Header: "Actions",
+            accessor: "actions",
+            Cell: ({ row }) => (
+                <button onClick={() => openModal(row)}>View</button>
+            ),
+        },
+      // ... other columns ...
+    ];
+
+    // Create CSV header row based on column headers and widths
+    let csvContent =
+      columns.map((column) => `${column.Header || ""}`).join(",") + "\n";
+    csvContent +=
+      columns.map((column) => `${column.width || ""}`).join(",") + "\n";
+
+    // Add data rows to CSV
+    data.forEach((item) => {
+      const row =
+        columns
+          .map((column) => {
+            // Format date as a string if it exists
+            let cellContent = item[column.accessor] || "";
+
+            // Truncate cell content if it exceeds a certain length (adjust the length as needed)
+            const maxLength = column.width || 100; // Use column width as max length
+            if (cellContent.length > maxLength) {
+              cellContent = cellContent.substring(0, maxLength - 100) + "...";
+            }
+
+            if (column.accessor === "date" && item[column.accessor]) {
+              return `${
+                item[column.accessor].toDate().toLocaleDateString() || ""
+              }`;
+            }
+            return `${cellContent}`;
+          })
+          .join(",") + "\n";
+
+      csvContent += row;
+    });
+
+    // Create a Blob containing the CSV data
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
+
+    // Create a download link
+    const link = document.createElement("a");
+    link.href = window.URL.createObjectURL(blob);
+    link.download = "BirthReg_Records.csv";
+
+    // Append the link to the document
+    document.body.appendChild(link);
+
+    // Trigger a click event on the link to initiate the download
+    link.click();
+
+    // Remove the link from the document
+    document.body.removeChild(link);
+  };
+
+  // Function to handle export based on type
+  const handleExport = (exportType) => {
+    if (exportType === "pdf") {
+      exportDataAsPDF();
+    } else if (exportType === "csv") {
+      exportDataAsCSV();
+    }
+    // Add more conditions for other export types if needed
+  };
 
     const openModal = async (row) => {
         setSelectedRow(row);
@@ -175,7 +392,7 @@ function App() {
                 Header: "Actions",
                 accessor: "actions",
                 Cell: ({ row }) => (
-                    <button onClick={() => openModal(row)}>View</button>
+                    <button onClick={() => openModal(row)} className="view-btn">View</button>
                 ),
             },
         ],
@@ -284,7 +501,7 @@ function App() {
                 </div>
 
                 <div className="searches">
-                    <FaSearch className="search-icon"></FaSearch>
+                    <FaSearch className="search-icons"></FaSearch>
                     <input
                         type="text"
                         placeholder="Search by Name"
@@ -372,7 +589,8 @@ function App() {
                     </div>
                 </div>
 
-                <button className="btn" onClick={exportDataAsCSV}>Export as CSV</button>
+        {/* DropdownButton component for export */}
+        <DropdownButton handleExport={handleExport} />
 
                 {isModalOpen ? ( // Render modal content if the modal is open
                     <div className="modal">
@@ -618,6 +836,17 @@ function App() {
             </div>
         </div>
     );
-}
+};
+
+const DropdownButton = ({ handleExport }) => (
+    <div className="dropdown">
+      <button className="dropbtn">Export File</button>
+      <div className="dropdown-content">
+        <button onClick={() => handleExport("pdf")}>Export as PDF</button>
+        <button onClick={() => handleExport("csv")}>Export as CSV</button>
+        {/* Add more buttons for other export types */}
+      </div>
+    </div>
+  );
 
 export default App;

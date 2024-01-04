@@ -194,7 +194,7 @@ function App() {
                 </div>
 
                 <div className="searches">
-                    <FaSearch className="search-icon"></FaSearch>
+                    <FaSearch className="search-icons"></FaSearch>
                     <input
                         type="text"
                         placeholder="Search by Name"
@@ -319,7 +319,7 @@ function App() {
                                             </td>
                                             <td style={{ padding: "8px", border: "1px solid black" }}>{item.status}</td>
                                             <td style={{ padding: "8px", border: "1px solid black" }}>
-                                                <button onClick={() => openDetailsModal(item)} className="view-button">
+                                                <button onClick={() => openDetailsModal(item)} className="view-btn">
                                                     View
                                                 </button>
                                             </td>

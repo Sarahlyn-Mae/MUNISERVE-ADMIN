@@ -1,17 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import Sidebar from '../components/sidebar';
-import './dashboard.css';
-import notification from '../assets/icons/Notification.png';
-import logo from '../assets/logo.png'
-import { BsClipboardCheckFill, BsClockHistory, BsCheckCircleFill, BsXCircleFill }
-  from 'react-icons/bs';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line }
-  from 'recharts';
-import useAuth  from '../components/useAuth';
-import 'firebase/firestore';
+import React, { useState, useEffect } from "react";
+import Sidebar from "../components/sidebar";
+import "./dashboard.css";
+import notification from "../assets/icons/Notification.png";
+import logo from "../assets/logo.png";
+import {
+  BsClipboardCheckFill,
+  BsClockHistory,
+  BsCheckCircleFill,
+  BsXCircleFill,
+} from "react-icons/bs";
+import useAuth from "../components/useAuth";
+import "firebase/firestore";
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, getDocs } from "firebase/firestore";
+import {
+  getFirestore,
+  collection,
+  query,
+  where,
+  getDocs,
+  Timestamp,
+} from "firebase/firestore";
 import Chart from "react-apexcharts";
+import ReactApexChart from "react-apexcharts";
+import "apexcharts";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -29,6 +40,86 @@ const app = initializeApp(firebaseConfig);
 const firestore = getFirestore(app);
 
 const Dashboard = ({ count }) => {
+  //Function for the graph of the total number of transaction per month
+  const [monthlyData, setMonthlyData] = useState([]);
+
+  useEffect(() => {
+    fetchMonthlyData();
+  }, []);
+
+  const fetchMonthlyData = async () => {
+    const currentYear = new Date().getFullYear(); // Get the current year
+    const monthlyTransactions = await getMonthlyData(currentYear);
+    setMonthlyData(monthlyTransactions);
+  };
+  
+  const getMonthlyData = async (year) => {
+    // Array of collection queries
+    const collectionQueries = [
+      query(
+        collection(firestore, "birth_reg"),
+        where("createdAt", ">", Timestamp.fromDate(new Date(`${year}-01-01`))),
+        where("createdAt", "<", Timestamp.fromDate(new Date(`${year}-12-31`)))
+      ),
+      query(
+        collection(firestore, "marriageCert"),
+        where("createdAt", ">", Timestamp.fromDate(new Date(`${year}-01-01`))),
+        where("createdAt", "<", Timestamp.fromDate(new Date(`${year}-12-31`)))
+      ),
+      query(
+        collection(firestore, "businessPermit"),
+        where("createdAt", ">", Timestamp.fromDate(new Date(`${year}-01-01`))),
+        where("createdAt", "<", Timestamp.fromDate(new Date(`${year}-12-31`)))
+      ),
+      query(
+        collection(firestore, "deathCert"),
+        where("createdAt", ">", Timestamp.fromDate(new Date(`${year}-01-01`))),
+        where("createdAt", "<", Timestamp.fromDate(new Date(`${year}-12-31`)))
+      ),
+      query(
+        collection(firestore, "job"),
+        where("createdAt", ">", Timestamp.fromDate(new Date(`${year}-01-01`))),
+        where("createdAt", "<", Timestamp.fromDate(new Date(`${year}-12-31`)))
+      ),
+    ];
+  
+    try {
+      // Execute all queries concurrently
+      const queryResults = await Promise.all(collectionQueries.map(getDocs));
+  
+      // Extract data from query results
+      const collectionData = queryResults.map((snapshot) =>
+        snapshot.docs.map((doc) => {
+          const data = doc.data();
+          // Convert Firebase Timestamp to JavaScript Date object
+          const createdAt = data.createdAt.toDate();
+          return { ...data, createdAt };
+        })
+      );
+  
+      // Combine data from different collections
+      const allData = [].concat(...collectionData);
+  
+      // Calculate monthly count
+      const monthlyCount = Array.from({ length: 12 }, (_, monthIndex) => {
+        const monthName = new Date(year, monthIndex, 1).toLocaleString("default", {
+          month: "long",
+        });
+        const count = allData.filter((item) => {
+          const itemMonth = item.createdAt.getMonth();
+          return itemMonth === monthIndex;
+        }).length;
+        return { month: monthName, count };
+      });
+  
+      return monthlyCount;
+    } catch (error) {
+      console.error("Error fetching monthly data:", error);
+      return [];
+    }
+  };
+  
+  //Function for the account name
   const { user } = useAuth();
   const [userEmail, setUserEmail] = useState('');
 
@@ -36,186 +127,13 @@ const Dashboard = ({ count }) => {
     const fetchUserEmail = () => {
       if (user) {
         const email = user.email;
-        const truncatedEmail = email.length > 7 ? `${email.substring(0, 7)}...` : email;
+        const truncatedEmail = email.length > 5 ? `${email.substring(0, 5)}...` : email;
         setUserEmail(truncatedEmail);
       }
     };
 
     fetchUserEmail();
   }, [user]);
-
-  const [barChartData, setBarChartData] = useState({
-    options: {
-      colors: ["#8884d8", "#82ca9d", "#FF5733", "#1E88DC", "#FFCA51", "#BB6FD4"],
-      chart: {
-        id: "basic-bar",
-      },
-      xaxis: {
-        categories: [],
-      },
-    },
-    series: [
-      {
-        name: "Pending",
-        data: [],
-      },
-      {
-        name: "Approved",
-        data: [],
-      },
-      {
-        name: "Disapproved",
-        data: [],
-      },
-      {
-        name: "Rejected",
-        data: [],
-      },
-      {
-        name: "Completed",
-        data: [],
-      },
-      {
-        name: "On Process",
-        data: [],
-      },
-    ],
-  });
-
-  const [monthlyCounts, setMonthlyCounts] = useState({
-    January: { pending: 0, approved: 0, disapproved: 0, completed: 0, rejected: 0, onProcess: 0 },
-    February: { pending: 0, approved: 0, disapproved: 0, completed: 0, rejected: 0, onProcess: 0 },
-    March: { pending: 0, approved: 0, disapproved: 0, completed: 0, rejected: 0, onProcess: 0 },
-    April: { pending: 0, approved: 0, disapproved: 0, completed: 0, rejected: 0, onProcess: 0 },
-    May: { pending: 0, approved: 0, disapproved: 0, completed: 0, rejected: 0, onProcess: 0 },
-    June: { pending: 0, approved: 0, disapproved: 0, completed: 0, rejected: 0, onProcess: 0 },
-    July: { pending: 0, approved: 0, disapproved: 0, completed: 0, rejected: 0, onProcess: 0 },
-    August: { pending: 0, approved: 0, disapproved: 0, completed: 0, rejected: 0, onProcess: 0 },
-    September: { pending: 0, approved: 0, disapproved: 0, completed: 0, rejected: 0, onProcess: 0 },
-    October: { pending: 0, approved: 0, disapproved: 0, completed: 0, rejected: 0, onProcess: 0 },
-    November: { pending: 0, approved: 0, disapproved: 0, completed: 0, rejected: 0, onProcess: 0 },
-    December: { pending: 0, approved: 0, disapproved: 0, completed: 0, rejected: 0, onProcess: 0 }
-  });
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const appointmentCollection = collection(firestore, "appointments");
-        const birthRegCollection = collection(firestore, "birth_reg");
-        const marriageCertCollection = collection(firestore, "marriageCert");
-        const deathCertCollection = collection(firestore, "deathCert");
-        const jobCollection = collection(firestore, "job");
-        const businessPermitCollection = collection(firestore, "businessPermit");
-
-        const [appointmentSnapshot, birthRegSnapshot, marriageCertSnapshot, deathCertSnapshot, jobSnapshot, businessPermitSnapshot] =
-          await Promise.all([
-            getDocs(appointmentCollection),
-            getDocs(birthRegCollection),
-            getDocs(marriageCertCollection),
-            getDocs(deathCertCollection),
-            getDocs(jobCollection),
-            getDocs(businessPermitCollection),
-          ]);
-
-        const counts = {
-          pending: 0,
-          approved: 0,
-          disapproved: 0,
-          completed: 0,
-          rejected: 0,
-          onProcess: 0,
-        };
-
-        const categories = [];
-
-        const processCollectionData = (snapshot) => {
-          snapshot.forEach((doc) => {
-            const data = doc.data();
-            const date = new Date(data.createdAt);
-
-            if (!date || isNaN(date.getTime())) {
-              console.log("Invalid date:", data.createdAt);
-              return;
-            }
-
-            const monthKey = date.toISOString();
-
-            // Initialize counts for the month if not present
-            if (!monthlyCounts[monthKey]) {
-              monthlyCounts[monthKey] = { pending: 0, approved: 0, disapproved: 0, rejected: 0, completed: 0, onProcess: 0 };
-            }
-
-            if (data.status === "Pending") {
-              counts.pending += 1;
-              monthlyCounts[monthKey].pending += 1;
-            } else if (data.status === "Approved") {
-              counts.approved += 1;
-              monthlyCounts[monthKey].approved += 1;
-            } else if (data.status === "Disapproved") {
-              counts.disapproved += 1;
-              monthlyCounts[monthKey].disapproved += 1;
-            }
-
-            categories.push(date.toLocaleDateString());
-          });
-        };
-
-        processCollectionData(appointmentSnapshot);
-        processCollectionData(birthRegSnapshot);
-        processCollectionData(marriageCertSnapshot);
-        processCollectionData(deathCertSnapshot);
-        processCollectionData(jobSnapshot, "status"); // Assuming job collection has a 'status' field
-        processCollectionData(businessPermitSnapshot, "status"); // Assuming businessPermit collection has a 'status' field
-
-        console.log("Fetched Data:", counts, categories);
-
-        // Update the state with monthly counts
-        if (categories.length > 0) {
-          const monthKey = categories[0].toLocaleString('en-us', { month: 'long' });
-          setMonthlyCounts((prevCounts) => ({
-            ...prevCounts,
-            [monthKey]: {
-              pending: counts.pending,
-              approved: counts.approved,
-              disapproved: counts.disapproved,
-            },
-          }));
-        }
-
-
-        setBarChartData((prevData) => ({
-          ...prevData,
-          options: {
-            ...prevData.options,
-            xaxis: {
-              ...prevData.options.xaxis,
-              categories: Object.keys(monthlyCounts),
-            },
-          },
-          series: [
-            {
-              name: "Pending",
-              data: Object.values(monthlyCounts).map((month) => month.pending),
-            },
-            {
-              name: "Approved",
-              data: Object.values(monthlyCounts).map((month) => month.approved),
-            },
-            {
-              name: "Disapproved",
-              data: Object.values(monthlyCounts).map((month) => month.disapproved),
-            },
-          ],
-        }));
-      } catch (error) {
-        console.error("Error fetching data from Firebase:", error);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  console.log("Rendering Data:", barChartData);
 
   const [recordCounts, setRecordCounts] = useState({
     appointments: 0,
@@ -234,17 +152,26 @@ const Dashboard = ({ count }) => {
         const marriageCertCollection = collection(firestore, "marriageCert");
         const deathCertCollection = collection(firestore, "deathCert");
         const jobCollection = collection(firestore, "job");
-        const businessPermitCollection = collection(firestore, "businessPermit");
+        const businessPermitCollection = collection(
+          firestore,
+          "businessPermit"
+        );
 
-        const [appointmentsSnapshot, birthRegSnapshot, marriageCertSnapshot, deathCertSnapshot, jobSnapshot, businessPermitSnapshot] =
-          await Promise.all([
-            getDocs(appointmentsCollection),
-            getDocs(birthRegCollection),
-            getDocs(marriageCertCollection),
-            getDocs(deathCertCollection),
-            getDocs(jobCollection),
-            getDocs(businessPermitCollection),
-          ]);
+        const [
+          appointmentsSnapshot,
+          birthRegSnapshot,
+          marriageCertSnapshot,
+          deathCertSnapshot,
+          jobSnapshot,
+          businessPermitSnapshot,
+        ] = await Promise.all([
+          getDocs(appointmentsCollection),
+          getDocs(birthRegCollection),
+          getDocs(marriageCertCollection),
+          getDocs(deathCertCollection),
+          getDocs(jobCollection),
+          getDocs(businessPermitCollection),
+        ]);
 
         const counts = {
           appointments: appointmentsSnapshot.size,
@@ -269,68 +196,146 @@ const Dashboard = ({ count }) => {
 
   console.log("Record Counts:", recordCounts);
 
+  const [statusCounts, setStatusCounts] = useState({
+    Pending: 0,
+    Completed: 0,
+    Approved: 0,
+    Disapproved: 0,
+  });
+
+  useEffect(() => {
+    const fetchStatusCounts = async () => {
+      try {
+        const collections = [
+          "birth_reg",
+          "marriageCert",
+          "deathCert",
+          "job",
+          "businessPermit",
+          "appointments",
+        ];
+
+        const getStatusCount = async (collectionName, status) => {
+          const collectionRef = collection(firestore, collectionName);
+          const querySnapshot = await getDocs(
+            query(collectionRef, where("status", "==", status))
+          );
+          return querySnapshot.size;
+        };
+
+        const counts = await Promise.all(
+          collections.map(async (collectionName) => {
+            const pendingCount = await getStatusCount(collectionName, "Pending");
+            const completedCount = await getStatusCount(
+              collectionName,
+              "Completed"
+            );
+            const approvedCount = await getStatusCount(
+              collectionName,
+              "Approved"
+            );
+            const disapprovedCount = await getStatusCount(
+              collectionName,
+              "Disapproved"
+            );
+
+            return {
+              collectionName,
+              pendingCount,
+              completedCount,
+              approvedCount,
+              disapprovedCount,
+            };
+          })
+        );
+
+        // Sum up counts from different collections
+        const totalStatusCounts = counts.reduce(
+          (accumulator, currentCount) => {
+            accumulator.pending += currentCount.pendingCount;
+            accumulator.completed += currentCount.completedCount;
+            accumulator.approved += currentCount.approvedCount;
+            accumulator.disapproved += currentCount.disapprovedCount;
+            return accumulator;
+          },
+          { pending: 0, completed: 0, approved: 0, disapproved: 0 }
+        );
+
+        console.log("Status Counts:", totalStatusCounts);
+
+        setStatusCounts(totalStatusCounts);
+      } catch (error) {
+        console.error("Error fetching status counts from Firebase:", error);
+        // Handle error here
+      }
+    };
+
+    fetchStatusCounts();
+  }, []);
+
   return (
-    <main className='main-container'>
+    <main className="main-container">
       <div className="sidebar">
         <Sidebar />
       </div>
 
-      <div className='container'>
+      <div className="container">
         <div className="header">
-          <div className='icons'>
+          <div className="icons">
             <h1>Dashboard</h1>
-            <img src={notification} alt="Notification.png" className='notif' />
-            <img src={logo} alt="logo" className='account-img' />
-            <div className='account-name'><h1>{userEmail}</h1></div>
+            <img src={notification} alt="Notification.png" className="notif" />
+            <img src={logo} alt="logo" className="account-img" />
+            <div className="account-name">
+              <h1>{userEmail}</h1>
+            </div>
           </div>
         </div>
 
-        <div className='main-cards'>
-
-          <div className='card'>
-            <div className='card-inner'>
+        <div className="mainbox">
+            <div className="total">
+                <div class="card-inner">
               <h3>Total No. of Service Requests</h3>
-              <BsClipboardCheckFill className='card_icon' />
-            </div>
-
+              <BsClipboardCheckFill className="total_icon" />
+              <p>{Object.values(recordCounts).reduce((acc, count) => acc + count, 0)}</p>
+              </div>
           </div>
 
-          <div className='card'>
-            <div className='card-inner'>
+            <div className="pending">
+              <div class="card-inner">
               <h3>Pending</h3>
-              <BsClockHistory className='card_icon' />
-            </div>
-
+              <BsClockHistory className="pending_icon" />
+              <p>{statusCounts.pending}</p>
+              </div>
           </div>
 
-          <div className='card'>
-            <div className='card-inner'>
+            <div className="complete">
+            <div class="card-inner">
               <h3>Completed</h3>
-              <BsCheckCircleFill className='card_icon' />
-            </div>
-
+              <BsCheckCircleFill className="complete_icon" />
+              <p>{statusCounts.completed}</p>
+              </div>
           </div>
 
-          <div className='card'>
-            <div className='card-inner'>
+            <div className="disapproved">
+            <div class="card-inner">
               <h3>Disapproved</h3>
-              <BsXCircleFill className='card_icon' />
-            </div>
-
+              <BsXCircleFill className="dis_icon" />
+              <p>{statusCounts.disapproved}</p>
+              </div>
           </div>
 
-          <div className='card'>
-            <div className='card-inner'>
+            <div className="approved">
+            <div class="card-inner">
               <h3>Approved</h3>
-              <BsCheckCircleFill className='card_icon' />
+              <BsCheckCircleFill className="app_icon" />
+              <p>{statusCounts.approved}</p>
+              </div>
             </div>
-
-          </div>
         </div>
 
-        <div className='chart'>
+        <div className="chart">
           {recordCounts && (
-            <div className='charts'>
+            <div className="charts">
               <div className="row">
                 <div className="col-4">
                   <h6>NO. OF APPLICATIONS PER SERVICES</h6>
@@ -341,7 +346,14 @@ const Dashboard = ({ count }) => {
                         id: "record-bar",
                       },
                       xaxis: {
-                        categories: ["Appointments", "Birth Registration", "Marriage Certificate", "Death Certificate", "Job Application", "Business Permit"],
+                        categories: [
+                          "Appointments",
+                          "Birth Registration",
+                          "Marriage Certificate",
+                          "Death Certificate",
+                          "Job Application",
+                          "Business Permit",
+                        ],
                       },
                     }}
                     series={[
@@ -358,36 +370,44 @@ const Dashboard = ({ count }) => {
                       },
                     ]}
                     type="bar"
-                    width="450"
+                    width={500}
+                    height={400}
                   />
                 </div>
               </div>
             </div>
           )}
 
-          {barChartData.options && barChartData.series && (
-            <div className='charts'>
-              <div className="row">
-                <div className="col-4">
-                  <h6>NO. OF APPLICATIONS BASED ON STATUS</h6>
-                  <Chart
-                    options={barChartData.options}
-                    series={barChartData.series}
-                    type="bar"
-                    width="450"
-                  />
-                </div>
-
-              </div>
-            </div>
-          )}
+          <div className="monthly-chart">
+          <div className="col-4">
+            <h6>TOTAL TRANSACTION PER MONTH</h6>
+            <ReactApexChart
+              options={{
+                colors: ["#8884d8"],
+                chart: {
+                  type: "bar",
+                },
+                xaxis: {
+                  categories: monthlyData.map((data) => data.month),
+                },
+              }}
+              series={[
+                { name: "Count", data: monthlyData.map((data) => data.count) },
+              ]}
+              type="bar"
+              width={500}
+              height={400}
+            />
+          </div>
+          </div>
         </div>
-        <footer className='footer'>
+        
+        <footer className="footer">
           <h3>All rights reserved 2023.</h3>
         </footer>
       </div>
     </main>
   );
-}
+};
 
 export default Dashboard;

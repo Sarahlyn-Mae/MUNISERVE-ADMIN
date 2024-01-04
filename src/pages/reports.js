@@ -5,14 +5,14 @@ import { getStorage, ref, getDownloadURL } from "firebase/storage"; // Import Fi
 import { useTable } from "react-table";
 import { saveAs } from "file-saver"; // Import file-saver for downloading
 import { FaSearch } from "react-icons/fa"; // Import icons
-import { Link } from "react-router-dom/cjs/react-router-dom.min";
-import "./transactions.css";
+import "./appointment.css";
 import Sidebar from "../components/sidebar";
 import notification from "../assets/icons/Notification.png";
 import logo from "../assets/logo.png";
 import { Table, Pagination } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 import jsPDF from "jspdf";
+import { Link, useLocation, useHistory } from 'react-router-dom';
 
 // Firebase configuration
 const firebaseConfig = {
@@ -44,12 +44,27 @@ function App() {
   const [selectedBirthplaceFilter, setSelectedBirthplaceFilter] = useState("");
   const [selectedStatusFilter, setSelectedStatusFilter] = useState("");
 
-  const fetchData = async () => {
-    try {
-      const snapshot = await collection(firestore, "marriageCert");
+// Mapping between collectionName and display names
+const collectionTypeMap = {
+  birth_reg: "Birth Registration",
+  marriageCert: "Marriage Certificate",
+  deathCert: "Death Certificate",
+  businessPermit: "Business Permit",
+  job: "Job Application",
+  appointments: "Appointments",
+};
+
+const fetchData = async () => {
+  try {
+    const collections = ["birth_reg", "marriageCert", "deathCert", "job", "businessPermit", "appointments"];
+    let allData = [];
+
+    for (const collectionName of collections) {
+      const snapshot = await collection(firestore, collectionName);
       const querySnapshot = await getDocs(snapshot);
       const items = querySnapshot.docs.map((doc) => ({
         id: doc.id,
+        collectionType: collectionTypeMap[collectionName], // Use the mapping
         ...doc.data(),
       }));
 
@@ -57,18 +72,21 @@ function App() {
       for (const item of items) {
         if (item.imagePath) {
           const imageUrl = await getDownloadURL(ref(storage, item.imagePath));
-          item.imageUrl = imageUrl; // Store the image URL in the data
+          item.imageUrl = imageUrl;
         }
       }
 
-      // Sort the data based on createdAt timestamp in descending order
-      items.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
-
-      setData(items);
-    } catch (error) {
-      console.error("Error fetching data: ", error);
+      allData = allData.concat(items);
     }
-  };
+
+    // Sort the data based on createdAt timestamp in descending order
+    allData.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
+
+    setData(allData);
+  } catch (error) {
+    console.error("Error fetching data: ", error);
+  }
+};
 
   useEffect(() => {
     fetchData();
@@ -80,6 +98,10 @@ function App() {
       {
         Header: "Name of Applicant",
         accessor: "userName",
+      },
+      {
+        Header: "Service Type",
+        accessor: "collectionType", // New column for service or collection type
       },
       {
         Header: "Residency",
@@ -141,7 +163,7 @@ function App() {
     });
 
     // Save the PDF
-    pdfDoc.save("Users_Records.pdf");
+    pdfDoc.save("Barangay Tomagoktok.pdf");
   };
 
   // Function to export data as CSV
@@ -150,6 +172,10 @@ function App() {
       {
         Header: "Name of Applicant",
         accessor: "userName",
+      },
+      {
+        Header: "Service Type",
+        accessor: "collectionType", // New column for service or collection type
       },
       {
         Header: "Residency",
@@ -229,7 +255,7 @@ function App() {
     // Create a download link
     const link = document.createElement("a");
     link.href = window.URL.createObjectURL(blob);
-    link.download = "Users_Records.csv";
+    link.download = "Barangay Tomagoktok.csv";
 
     // Append the link to the document
     document.body.appendChild(link);
@@ -265,12 +291,6 @@ function App() {
     return date instanceof Date && !isNaN(date);
   }
 
-  const formatTimestamp = (timestamp) => {
-    if (timestamp && timestamp.seconds) {
-      return new Date(timestamp.seconds * 1000).toLocaleDateString();
-    }
-    return "Invalid Date";
-  };
 
   // Define table columns
   const columns = React.useMemo(
@@ -282,6 +302,10 @@ function App() {
       {
         Header: "Name of Applicant",
         accessor: "userName",
+      },
+      {
+        Header: "Service Type",
+        accessor: "collectionType", // New column for service or collection type
       },
       {
         Header: "Residency",
@@ -413,7 +437,7 @@ function App() {
       <div className="container">
         <div className="header">
           <div className="icons">
-            <h1>Transactions</h1>
+            <h1>Reports</h1>
             <img src={notification} alt="Notification.png" className="notif" />
             <img src={logo} alt="logo" className="account-img" />
             <div className="account-name">
@@ -422,42 +446,8 @@ function App() {
           </div>
         </div>
 
-        <div className="screen">
-          <div className="categories-container">
-            <Link to="/birthreg" className="link">
-              <button className="categories1">
-                <h5>Certificate of Live Birth</h5>
-              </button>
-            </Link>
-
-            <Link to="/marriageCert" className="link">
-              <button className="categories1">
-                <h5>Certificate of Marriage</h5>
-              </button>
-            </Link>
-
-            <Link to="/deathCert" className="link">
-              <button className="categories1">
-                <h5>Certificate of Death</h5>
-              </button>
-            </Link>
-
-            <Link to="/businessPermit" className="link">
-              <button className="categories1">
-                <h5>Business Permit</h5>
-              </button>
-            </Link>
-
-            <Link to="/job" className="link">
-              <button className="categories1">
-                <h5>Job Application</h5>
-              </button>
-            </Link>
-          </div>
-        </div>
-
-        <div>
-          <h1>Marriage Certificate</h1>
+        <div className="title">
+          <h1>All Records</h1>
         </div>
 
         <div className="searches">
@@ -556,109 +546,11 @@ function App() {
               <option value="Pending">Pending</option>
             </select>
           </div>
-        </div>
 
-        {/* DropdownButton component for export */}
         <DropdownButton handleExport={handleExport} />
 
-        {isModalOpen ? ( // Render modal content if the modal is open
-          <div className="modal">
-            <div className="modal-content">
-              <h2>Full Details</h2>
-              {selectedRow && (
-                <form>
-                  {data
-                    .filter((item) => item.id === selectedRow.original.id)
-                    .map((item) => (
-                      <div key={item.id} className="request-item">
-                        <div className="title">
-                          <h6>Full Details</h6>
-                          <span className="close" onClick={closeModal}>
-                            &times;
-                          </span>
-                        </div>
-                        <p>
-                          This registration form is requested by{" "}
-                          {selectedRow.values.m_name}.
-                        </p>
+        </div>
 
-                        <div className="section">
-                          <div className="form-grid">
-                            <div className="form-group">
-                              <label>Name of Wife</label>
-                              <div className="placeholder">{item.wname}</div>
-                            </div>
-
-                            <div className="form-group">
-                              <label>Name of Husband</label>
-                              <div className="placeholder">{item.hname}</div>
-                            </div>
-
-                            <div className="form-group">
-                              <label>Date of Marriage</label>
-                              <div className="placeholder">
-                                {item.date &&
-                                  item.date.toDate().toLocaleString()}
-                              </div>
-                            </div>
-
-                            <div className="form-group">
-                              <label>Place of Marriage</label>
-                              <div className="placeholder">{item.marriage}</div>
-                            </div>
-
-                            <div className="form-group">
-                              <label>Complete name of requesting party</label>
-                              <div className="placeholder">
-                                {selectedRow.values.rname}
-                              </div>
-                            </div>
-
-                            <div className="form-group">
-                              <label>
-                                Complete address of requesting party
-                              </label>
-                              <div className="placeholder">{item.address}</div>
-                            </div>
-
-                            <div className="form-group">
-                              <label>Number of copies needed</label>
-                              <div className="placeholder">{item.copies}</div>
-                            </div>
-
-                            <div className="form-group">
-                              <label>Purpose of the certification</label>
-                              <div className="placeholder">{item.purpose}</div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="section">
-                          <h3>Proof of Payment</h3>
-                          <div className="proof">
-                            {item.payment ? (
-                              <img
-                                src={item.payment}
-                                alt="Proof of Payment"
-                                className="proof-image"
-                              />
-                            ) : (
-                              <p>No payment proof available</p>
-                            )}
-                          </div>
-                          <div className="form-group">
-                            <label>Status of Appointment</label>
-                            <div className="placeholder">{item.status}</div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                </form>
-              )}
-            </div>
-          </div>
-        ) : (
-          // Render the table if the modal is not open
           <Table
             striped
             bordered
@@ -697,7 +589,6 @@ function App() {
               )}
             </tbody>
           </Table>
-        )}
 
         <Pagination>
           {[...Array(Math.ceil(rows.length / itemsPerPage)).keys()].map(

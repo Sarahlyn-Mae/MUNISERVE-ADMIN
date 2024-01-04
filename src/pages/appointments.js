@@ -10,6 +10,9 @@ import jsPDF from "jspdf";
 import "jspdf-autotable";
 import notification from "../assets/icons/Notification.png";
 import logo from "../assets/logo.png";
+import folder from "../assets/icons/folder.png";
+import { Table, Pagination } from "react-bootstrap";
+import "bootstrap/dist/css/bootstrap.min.css";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -292,11 +295,25 @@ const exportDataAsCSV = () => {
   };
 
   // React Table configuration
-  const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } =
-    useTable({
+    const {
+      getTableProps,
+      getTableBodyProps,
+      headerGroups,
+      rows,
+      prepareRow,
+    } = useTable({
       columns,
-      data: applyFilters(), // Use the filtered data
+      data: applyFilters(),
     });
+
+    // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = rows.slice(indexOfFirstItem, indexOfLastItem);
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   return (
     <div>
@@ -318,7 +335,7 @@ const exportDataAsCSV = () => {
 
         {/* Search input */}
         <div className="search-containers">
-          <FaSearch className="search-icon"></FaSearch>
+          <FaSearch className="search-iconss"></FaSearch>
           <input
             type="text"
             placeholder="Search by Name"
@@ -328,11 +345,11 @@ const exportDataAsCSV = () => {
           />
 
           {/* Filter dropdowns */}
-          <div className="filter-container">
+          <div className="filter-containers">
             <select
               value={departmentFilter}
               onChange={(e) => setDepartmentFilter(e.target.value)}
-              className="filter-select"
+              className="filter-selects"
             >
               <option value="">Filter by Offices</option>
               <option value="Municipal Mayor's Office">
@@ -389,12 +406,12 @@ const exportDataAsCSV = () => {
               placeholder="Filter by Date"
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
-              className="filter-input"
+              className="filter-inputs"
             />
             <select
               value={personnelFilter}
               onChange={(e) => setPersonnelFilter(e.target.value)}
-              className="filter-select"
+              className="filter-selects"
             >
               <option value="">Filter by Personnel</option>
               <option value="Hon. Melanie Abarientos-Garcia">
@@ -436,7 +453,7 @@ const exportDataAsCSV = () => {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="filter-select"
+              className="filter-selects"
             >
               <option value="">Filter by Status</option>
               <option value="Pending">Pending</option>
@@ -445,53 +462,49 @@ const exportDataAsCSV = () => {
               {/* Add more options as needed */}
             </select>
           </div>
+        
+          <div>
+            <DropdownButton handleExport={handleExport} />
+          </div>
         </div>
 
-        {/* DropdownButton component for export */}
-        <DropdownButton handleExport={handleExport} />
-
-        <table
-          {...getTableProps()}
-          className="custom-table"
-          style={{ border: "1px solid black" }}
-        >
+        {/* Bootstrap Table */}
+        <Table striped bordered hover {...getTableProps()} className="custom-table">
           <thead>
             {headerGroups.map((headerGroup) => (
               <tr {...headerGroup.getHeaderGroupProps()}>
                 {headerGroup.headers.map((column) => (
-                  <th
-                    {...column.getHeaderProps()}
-                    style={{ borderBottom: "1px solid black" }}
-                  >
-                    {column.render("Header")}
-                  </th>
+                  <th {...column.getHeaderProps()}>{column.render("Header")}</th>
                 ))}
               </tr>
             ))}
           </thead>
           <tbody {...getTableBodyProps()}>
-            {rows.map((row) => {
+            {currentItems.map((row) => {
               prepareRow(row);
               return (
-                <tr
-                  {...row.getRowProps()}
-                  style={{ borderBottom: "1px solid black" }}
-                >
-                  {row.cells.map((cell) => {
-                    return (
-                      <td
-                        {...cell.getCellProps()}
-                        style={{ padding: "8px", border: "1px solid black" }}
-                      >
-                        {cell.render("Cell")}
-                      </td>
-                    );
-                  })}
+                <tr {...row.getRowProps()}>
+                  {row.cells.map((cell) => (
+                    <td {...cell.getCellProps()}>{cell.render("Cell")}</td>
+                  ))}
                 </tr>
               );
             })}
           </tbody>
-        </table>
+        </Table>
+
+        {/* Pagination */}
+        <Pagination>
+          {[...Array(Math.ceil(rows.length / itemsPerPage)).keys()].map((number) => (
+            <Pagination.Item
+              key={number + 1}
+              active={number + 1 === currentPage}
+              onClick={() => paginate(number + 1)}
+            >
+              {number + 1}
+            </Pagination.Item>
+          ))}
+        </Pagination>
       </div>
     </div>
   );
