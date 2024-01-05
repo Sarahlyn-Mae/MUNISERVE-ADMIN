@@ -59,7 +59,11 @@ function App() {
             }
 
             // Sort the data based on createdAt timestamp in descending order
-            items.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
+            items.sort((a, b) => {
+                const aSeconds = a.createdAt?.seconds || 0;
+                const bSeconds = b.createdAt?.seconds || 0;
+                return bSeconds - aSeconds;
+              });
 
             setData(items);
         } catch (error) {
@@ -334,11 +338,11 @@ function App() {
             },
             {
                 Header: "Child Name",
-                accessor: "childname",
+                accessor: (row) => `${row.original.c_fname} ${row.original.c_mname} ${row.original.c_lname}`,
             },
             {
                 Header: "Birth Date",
-                accessor: "c_birthdate",
+                accessor: "birthdate",
                 Cell: ({ value }) => {
                     if (value) {
                         const date = value.toDate ? value.toDate() : value; // Check if toDate() is available

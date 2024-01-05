@@ -1078,7 +1078,7 @@ function App() {
               </button>
             </Link>
 
-            <Link to="/businessPermit" className="link">
+            <Link to="/analytics2023" className="link">
               <button className="categories1">
                 <h5>Business Permit</h5>
               </button>

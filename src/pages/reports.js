@@ -12,7 +12,7 @@ import logo from "../assets/logo.png";
 import { Table, Pagination } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 import jsPDF from "jspdf";
-import { Link, useLocation, useHistory } from 'react-router-dom';
+import { Link, useLocation, useHistory } from "react-router-dom";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -41,52 +41,73 @@ function App() {
   const [selectedYearFilter, setSelectedYearFilter] = useState("");
   const [selectedMonthFilter, setSelectedMonthFilter] = useState("");
   const [selectedDayFilter, setSelectedDayFilter] = useState("");
-  const [selectedBirthplaceFilter, setSelectedBirthplaceFilter] = useState("");
   const [selectedStatusFilter, setSelectedStatusFilter] = useState("");
+  const [selectedBarangayFilter, setSelectedBarangayFilter] = useState("");
+  const [selectedServiceTypeFilter, setSelectedServiceTypeFilter] = useState("");
 
-// Mapping between collectionName and display names
-const collectionTypeMap = {
-  birth_reg: "Birth Registration",
-  marriageCert: "Marriage Certificate",
-  deathCert: "Death Certificate",
-  businessPermit: "Business Permit",
-  job: "Job Application",
-  appointments: "Appointments",
-};
+  // Mapping between collectionName and display names
+  const collectionTypeMap = {
+    birth_reg: "Birth Registration",
+    marriageCert: "Marriage Certificate",
+    deathCert: "Death Certificate",
+    appointments: "Appointments",
+    businessPermit: "Business Permit",
+    job: "Job Application",
+  };
 
-const fetchData = async () => {
-  try {
-    const collections = ["birth_reg", "marriageCert", "deathCert", "job", "businessPermit", "appointments"];
-    let allData = [];
+  const fetchData = async () => {
+    try {
+      const collections = [
+        "birth_reg",
+        "marriageCert",
+        "deathCert",
+        "appointments",
+        "job",
+        "businessPermit",
+      ];
+      let allData = [];
 
-    for (const collectionName of collections) {
-      const snapshot = await collection(firestore, collectionName);
-      const querySnapshot = await getDocs(snapshot);
-      const items = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        collectionType: collectionTypeMap[collectionName], // Use the mapping
-        ...doc.data(),
-      }));
+      for (const collectionName of collections) {
+        const snapshot = await collection(firestore, collectionName);
+        console.log(`Fetching data from ${collectionName}...`);
+        const querySnapshot = await getDocs(snapshot);
 
-      // Fetch image URLs from Firebase Storage and add them to the data
-      for (const item of items) {
-        if (item.imagePath) {
-          const imageUrl = await getDownloadURL(ref(storage, item.imagePath));
-          item.imageUrl = imageUrl;
+        const items = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          collectionType: collectionTypeMap[collectionName], // Use the mapping
+          createdAt: doc.data().createdAt || { seconds: 0 }, // Default value for createdAt
+          ...doc.data(),
+        }));
+
+        // Fetch image URLs from Firebase Storage and add them to the data
+        for (const item of items) {
+          if (item.imagePath) {
+            const imageUrl = await getDownloadURL(ref(storage, item.imagePath));
+            item.imageUrl = imageUrl;
+          }
+
+          // Add a check for the presence of required fields
+          if (!item.createdAt) {
+            console.error(
+              `Missing createdAt field in document with id: ${item.id}`
+            );
+            continue; // Skip this item
+          }
         }
+
+        allData = allData.concat(items);
       }
 
-      allData = allData.concat(items);
+      // Sort the data based on createdAt timestamp in descending order
+      allData.sort(
+        (a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
+      );
+
+      setData(allData);
+    } catch (error) {
+      console.error("Error fetching data: ", error);
     }
-
-    // Sort the data based on createdAt timestamp in descending order
-    allData.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
-
-    setData(allData);
-  } catch (error) {
-    console.error("Error fetching data: ", error);
-  }
-};
+  };
 
   useEffect(() => {
     fetchData();
@@ -150,7 +171,9 @@ const fetchData = async () => {
       columns.map((column) => {
         // Format date as a string if it exists
         if (column.accessor === "date" && item[column.accessor]) {
-          return item[column.accessor].toDate().toLocaleDateString() || "";
+          return (
+            (item[column.accessor]?.toDate?.() || "").toLocaleDateString() || ""
+          );
         }
         return item[column.accessor] || "";
       })
@@ -282,15 +305,9 @@ const fetchData = async () => {
     setIsModalOpen(true);
   };
 
-  const closeModal = () => {
-    setSelectedRow(null);
-    setIsModalOpen(false);
-  };
-
   function isValidDate(date) {
     return date instanceof Date && !isNaN(date);
   }
-
 
   // Define table columns
   const columns = React.useMemo(
@@ -339,62 +356,79 @@ const fetchData = async () => {
         Header: "Status",
         accessor: "status",
       },
-      {
-        Header: "Actions",
-        accessor: "actions",
-        Cell: ({ row }) => <button onClick={() => openModal(row)} className="view-btn">View</button>,
-      },
     ],
     []
   );
 
-  const filteredData = data.filter((item) => {
-    const getMonthName = (monthNumber) => {
-      const monthNames = [
-        "January",
-        "February",
-        "March",
-        "April",
-        "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December",
-      ];
-      return monthNames[monthNumber - 1];
-    };
+  // Add this function definition along with other filter change functions
+const handleBarangayFilterChange = (event) => {
+  setSelectedBarangayFilter(event.target.value);
+};
 
-    return (
-      item.rname &&
-      item.rname.toLowerCase().includes(searchQuery.toLowerCase()) &&
-      (selectedYearFilter !== ""
-        ? item.createdAt &&
-          item.createdAt.toDate &&
-          typeof item.createdAt.toDate === "function" &&
-          item.createdAt.toDate().getFullYear().toString() ===
-            selectedYearFilter
-        : true) &&
-      (selectedMonthFilter !== ""
-        ? item.createdAt &&
-          item.createdAt.toDate &&
-          typeof item.createdAt.toDate === "function" &&
-          getMonthName(item.createdAt.toDate().getMonth() + 1).toLowerCase() ===
-            selectedMonthFilter.toLowerCase()
-        : true) &&
-      (selectedDayFilter !== ""
-        ? item.createdAt &&
-          item.createdAt.toDate &&
-          typeof item.createdAt.toDate === "function" &&
-          item.createdAt.toDate().getDate().toString() === selectedDayFilter
-        : true) &&
-      (selectedStatusFilter !== ""
-        ? item.status.toLowerCase().includes(selectedStatusFilter.toLowerCase())
-        : true)
-    );
-  });
+const handleServiceTypeFilterChange = (event) => {
+  setSelectedServiceTypeFilter(event.target.value);
+};
+
+const filteredData = data.filter((item) => {
+  const getMonthName = (monthNumber) => {
+    const monthNames = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+    return monthNames[monthNumber - 1];
+  };
+
+  const lowerCaseSearchQuery = searchQuery.toLowerCase();
+  const lowerCaseStatusFilter = selectedStatusFilter.toLowerCase();
+  const lowerCaseBarangayFilter = selectedBarangayFilter.toLowerCase();
+  const lowerCaseServiceTypeFilter = selectedServiceTypeFilter.toLowerCase();
+
+  return (
+    item.rname &&
+    item.rname.toLowerCase().includes(lowerCaseSearchQuery) &&
+    (selectedYearFilter !== ""
+      ? item.createdAt &&
+        item.createdAt.toDate &&
+        typeof item.createdAt.toDate === "function" &&
+        item.createdAt.toDate().getFullYear().toString() ===
+          selectedYearFilter
+      : true) &&
+    (selectedMonthFilter !== ""
+      ? item.createdAt &&
+        item.createdAt.toDate &&
+        typeof item.createdAt.toDate === "function" &&
+        getMonthName(item.createdAt.toDate().getMonth() + 1).toLowerCase() ===
+          selectedMonthFilter.toLowerCase()
+      : true) &&
+    (selectedDayFilter !== ""
+      ? item.createdAt &&
+        item.createdAt.toDate &&
+        typeof item.createdAt.toDate === "function" &&
+        item.createdAt.toDate().getDate().toString() === selectedDayFilter
+      : true) &&
+    (selectedStatusFilter !== ""
+      ? item.status && item.status.toLowerCase().includes(lowerCaseStatusFilter)
+      : true) &&
+    (selectedBarangayFilter !== ""
+      ? item.userBarangay &&
+        item.userBarangay.toLowerCase() === lowerCaseBarangayFilter
+      : true) &&
+    (selectedServiceTypeFilter !== ""
+      ? item.collectionType &&
+        item.collectionType.toLowerCase() === lowerCaseServiceTypeFilter
+      : true)
+  );
+});
 
   // React Table configuration
   const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } =
@@ -535,6 +569,63 @@ const fetchData = async () => {
             </select>
 
             <select
+              value={selectedBarangayFilter}
+              onChange={handleBarangayFilterChange}
+              className="filter"
+            >
+              <option value="">Barangays</option>
+              <option value="Bagong Silang">Bagong Silang</option>
+              <option value="Bucal">Bucal</option>
+              <option value="Cabasag">Cabasag</option>
+              <option value="Comadaycaday">Comadaycaday</option>
+              <option value="Comadogcadog">Comadogcadog</option>
+              <option value="Domagondong">Domagondong</option>
+              <option value="Kinalangan">Kinalangan</option>
+              <option value="Mabini">Mabini</option>
+              <option value="Magais 1">Magais 1</option>
+              <option value="Magais 2">Magais 2</option>
+              <option value="Mansalaya">Mansalaya</option>
+              <option value="Nagkalit">Nagkalit</option>
+              <option value="Palaspas">Palaspas</option>
+              <option value="Pamplona">Pamplona</option>
+              <option value="Pasay">Pasay</option>
+              <option value="Peñafrancia">Peñafrancia</option>
+              <option value="Pinagdapian">Pinagdapian</option>
+              <option value="Pinugusan">Pinugusan</option>
+              <option value="Pob. Zone 1">Pob. Zone 1</option>
+              <option value="Pob. Zone 2">Pob. Zone 2</option>
+              <option value="Pob. Zone 3">Pob. Zone 3</option>
+              <option value="Sabang">Sabang</option>
+              <option value="Salvaciom">Salvacion</option>
+              <option value="San Juan">San Juan</option>
+              <option value="San Pablo">San Pablo</option>
+              <option value="Sinuknipan 1">Sinuknipan 1</option>
+              <option value="Sinuknipan 2">Sinuknipan 2</option>
+              <option value="Sta. Rita 1">Sta. Rita 1</option>
+              <option value="Sta. Rita 2">Sta. Rita 2</option>
+              <option value="Sugsugin">Sugsugin</option>
+              <option value="Tabion">Tabion</option>
+              <option value="Tomagoktok">Tomagoktok</option>
+              {/* Add more options for other barangays */}
+            </select>
+
+            <select
+            value={selectedServiceTypeFilter}
+            onChange={handleServiceTypeFilterChange}
+            className="filter"
+          >
+            <option value="">Service Type</option>
+            <option value="Birth Registration">Birth Registration</option>
+            <option value="Marriage Certificate">Marriage Certificate</option>
+            <option value="Marriage Registration">Marriage Registration</option>
+            <option value="Death Certificate">Death Certificate</option>
+            <option value="Death Registration">Death Registration</option>
+            <option value="Job Application">Job Application</option>
+            <option value="Business Permit">Business Permit</option>
+            {/* Add options for other service types */}
+          </select>
+
+            <select
               value={selectedStatusFilter}
               onChange={handleStatusFilterChange}
               className="filter"
@@ -547,48 +638,47 @@ const fetchData = async () => {
             </select>
           </div>
 
-        <DropdownButton handleExport={handleExport} />
-
+          <DropdownButton handleExport={handleExport} />
         </div>
 
-          <Table
-            striped
-            bordered
-            hover
-            {...getTableProps()}
-            className="custom-table"
-          >
-            <thead>
-              {headerGroups.map((headerGroup) => (
-                <tr {...headerGroup.getHeaderGroupProps()}>
-                  {headerGroup.headers.map((column) => (
-                    <th {...column.getHeaderProps()}>
-                      {column.render("Header")}
-                    </th>
+        <Table
+          striped
+          bordered
+          hover
+          {...getTableProps()}
+          className="custom-table"
+        >
+          <thead>
+            {headerGroups.map((headerGroup) => (
+              <tr {...headerGroup.getHeaderGroupProps()}>
+                {headerGroup.headers.map((column) => (
+                  <th {...column.getHeaderProps()}>
+                    {column.render("Header")}
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody {...getTableBodyProps()}>
+            {currentItems.map((row) => {
+              prepareRow(row);
+              return (
+                <tr {...row.getRowProps()}>
+                  {row.cells.map((cell) => (
+                    <td {...cell.getCellProps()}>{cell.render("Cell")}</td>
                   ))}
                 </tr>
-              ))}
-            </thead>
-            <tbody {...getTableBodyProps()}>
-              {currentItems.map((row) => {
-                prepareRow(row);
-                return (
-                  <tr {...row.getRowProps()}>
-                    {row.cells.map((cell) => (
-                      <td {...cell.getCellProps()}>{cell.render("Cell")}</td>
-                    ))}
-                  </tr>
-                );
-              })}
-              {filteredData.length === 0 && (
-                <tr>
-                  <td colSpan="8" style={{ textAlign: "center" }}>
-                    No matching records found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </Table>
+              );
+            })}
+            {filteredData.length === 0 && (
+              <tr>
+                <td colSpan="8" style={{ textAlign: "center" }}>
+                  No matching records found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </Table>
 
         <Pagination>
           {[...Array(Math.ceil(rows.length / itemsPerPage)).keys()].map(

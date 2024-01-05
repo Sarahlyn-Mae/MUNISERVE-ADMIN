@@ -1,6 +1,6 @@
 // index.js
 import React from 'react';
-import { createRoot } from 'react-dom';
+import { createRoot } from 'react-dom/client'; // Update the import
 import { BrowserRouter as Router } from 'react-router-dom';
 import './index.css';
 import reportWebVitals from './reportWebVitals';
