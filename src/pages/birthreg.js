@@ -392,13 +392,6 @@ function App() {
                 Header: "Status",
                 accessor: "status",
             },
-            {
-                Header: "Actions",
-                accessor: "actions",
-                Cell: ({ row }) => (
-                    <button onClick={() => openModal(row)} className="view-btn">View</button>
-                ),
-            },
         ],
         []
     );
@@ -829,7 +822,7 @@ function App() {
                             })}
                             {filteredData.length === 0 && (
                                 <tr>
-                                    <td colSpan="8" style={{ textAlign: "center" }}>
+                                    <td colSpan="9" style={{ textAlign: "center" }}>
                                         No matching records found.
                                     </td>
                                 </tr>

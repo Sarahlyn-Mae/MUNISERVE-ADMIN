@@ -85,19 +85,15 @@ function App() {
             const imageUrl = await getDownloadURL(ref(storage, item.imagePath));
             item.imageUrl = imageUrl;
           }
-
           // Add a check for the presence of required fields
           if (!item.createdAt) {
             console.error(
               `Missing createdAt field in document with id: ${item.id}`
             );
             continue; // Skip this item
-          }
-        }
-
+          }}
         allData = allData.concat(items);
       }
-
       // Sort the data based on createdAt timestamp in descending order
       allData.sort(
         (a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
@@ -372,18 +368,8 @@ const handleServiceTypeFilterChange = (event) => {
 const filteredData = data.filter((item) => {
   const getMonthName = (monthNumber) => {
     const monthNames = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
     ];
     return monthNames[monthNumber - 1];
   };
@@ -394,14 +380,13 @@ const filteredData = data.filter((item) => {
   const lowerCaseServiceTypeFilter = selectedServiceTypeFilter.toLowerCase();
 
   return (
-    item.rname &&
-    item.rname.toLowerCase().includes(lowerCaseSearchQuery) &&
+    item.userName &&
+    item.userName.toLowerCase().includes(lowerCaseSearchQuery) &&
     (selectedYearFilter !== ""
       ? item.createdAt &&
         item.createdAt.toDate &&
         typeof item.createdAt.toDate === "function" &&
-        item.createdAt.toDate().getFullYear().toString() ===
-          selectedYearFilter
+        item.createdAt.toDate().getFullYear().toString() === selectedYearFilter
       : true) &&
     (selectedMonthFilter !== ""
       ? item.createdAt &&
@@ -429,6 +414,7 @@ const filteredData = data.filter((item) => {
       : true)
   );
 });
+
 
   // React Table configuration
   const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } =

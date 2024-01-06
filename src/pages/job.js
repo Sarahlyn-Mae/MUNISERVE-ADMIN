@@ -294,13 +294,12 @@ function App() {
                                     <th style={{ borderBottom: "1px solid black" }}>Email</th>
                                     <th style={{ borderBottom: "1px solid black" }}>Date of Application</th>
                                     <th style={{ borderBottom: "1px solid black" }}>Status</th>
-                                    <th style={{ borderBottom: "1px solid black" }}>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {sortedData.length === 0 ? (
                                     <tr>
-                                        <td colSpan="5" style={{ textAlign: "center" }}>
+                                        <td colSpan="7" style={{ textAlign: "center" }}>
                                             No matching records found.
                                         </td>
                                     </tr>
@@ -317,12 +316,7 @@ function App() {
                                                     ? item.createdAt.toDate().toLocaleString()
                                                     : "Invalid Date"}
                                             </td>
-                                            <td style={{ padding: "8px", border: "1px solid black" }}>{item.status}</td>
-                                            <td style={{ padding: "8px", border: "1px solid black" }}>
-                                                <button onClick={() => openDetailsModal(item)} className="view-btn">
-                                                    View
-                                                </button>
-                                            </td>
+                                            <td style={{ padding: "8px", border: "1px solid black" }}>{item.status}</td>                                           
                                         </tr>
                                     ))
                                 )}

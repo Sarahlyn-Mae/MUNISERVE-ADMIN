@@ -315,11 +315,6 @@ function App() {
         Header: "Status",
         accessor: "status",
       },
-      {
-        Header: "Actions",
-        accessor: "actions",
-        Cell: ({ row }) => <button onClick={() => openModal(row)} className="view-btn">View</button>,
-      },
     ],
     []
   );

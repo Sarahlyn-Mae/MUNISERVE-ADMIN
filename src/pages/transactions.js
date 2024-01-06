@@ -610,6 +610,15 @@ function App() {
           ),
           where("createdAt", "<", Timestamp.fromDate(new Date(`${year}-12-31`)))
         ),
+        query(
+          collection(db, "appointments"),
+          where(
+            "createdAt",
+            ">",
+            Timestamp.fromDate(new Date(`${year}-01-01`))
+          ),
+          where("createdAt", "<", Timestamp.fromDate(new Date(`${year}-12-31`)))
+        ),
       ];
 
       // Execute all queries concurrently
