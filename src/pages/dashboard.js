@@ -402,9 +402,6 @@ const Dashboard = ({ count }) => {
           </div>
         </div>
         
-        <footer className="footer">
-          <h3>All rights reserved 2023.</h3>
-        </footer>
       </div>
     </main>
   );

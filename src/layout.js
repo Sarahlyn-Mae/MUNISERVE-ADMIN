@@ -102,7 +102,7 @@ const Layout = () => {
             <Route path="/tabion" component={Tabion} />
             <Route path="/tomagoktok" component={Tomagoktok} />
 
-            <Route path="/analytics2023" component={Analytics} />
+            <Route path="/analytics" component={Analytics} />
 
           </Switch>
         </MainContent>

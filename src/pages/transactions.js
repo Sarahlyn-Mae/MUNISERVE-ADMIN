@@ -36,6 +36,25 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+function getServiceTypeCollection(serviceType) {
+  switch (serviceType) {
+    case "Birth Registration":
+      return collection(db, "birth_reg");
+    case "Marriage Certificate":
+      return collection(db, "marriageCert");
+    case "Death Certificate":
+      return collection(db, "deathCert");
+    case "Job Application":
+      return collection(db, "job");
+    case "Business Permit":
+      return collection(db, "businessPermit");
+    case "Appointments":
+      return collection(db, "appointments");
+    default:
+      return null;
+  }
+}
+
 function App() {
   const [dayTransactions, setDayTransactions] = useState(0);
   const [weekTransactions, setWeekTransactions] = useState(0);
@@ -51,6 +70,14 @@ function App() {
   const [monthlyDataForBarangay, setMonthlyDataForBarangay] = useState([]);
   const [userCount, setUserCount] = useState(0);
   const [serviceTypeData, setServiceTypeData] = useState([]);
+  const [serviceTypeMonthlyData, setServiceTypeMonthlyData] = useState([]);
+  const [selectedServiceType, setSelectedServiceType] = useState(null);
+  const [drillDownData, setDrillDownData] = useState([]);
+
+  const [dailyServiceData, setDailyServiceData] = useState([]);
+  const [dailyData, setDailyData] = useState([]);
+  const [startDate, setStartDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(new Date());
 
   const { user } = useAuth();
   const [userEmail, setUserEmail] = useState("");
@@ -69,27 +96,34 @@ function App() {
   }, [user]);
 
   useEffect(() => {
-    // Fetch and count transactions for the day
-    fetchTransactions("day");
-
-    // Fetch and count transactions for the week
-    fetchTransactions("week");
-
-    // Fetch and count transactions for the month
-    fetchTransactions("month");
-
-    // Fetch and count transactions for the year
-    fetchTransactions("year");
-
     fetchMonthlyData();
-
-    fetchMonthlyStatusData();
-
     fetchBarangayData();
     fetchYearlyDataForBarangay();
     fetchMonthlyDataForSelectedBarangay();
     fetchUserCount();
-  }, [selectedBarangay, serviceTypeData]);
+
+    // Fetch service type data and update state
+    const fetchServiceTypeData = async () => {
+      const data = await getServiceTypeData();
+      setServiceTypeData(data);
+    };
+
+    fetchServiceTypeData();
+
+    const fetchDrillDownData = async () => {
+      if (selectedServiceType && selectedBarangay) {
+        const drillDownData = await getDrillDownData(
+          selectedServiceType,
+          selectedBarangay
+        );
+        setDrillDownData(drillDownData);
+      }
+    };
+
+    fetchDrillDownData();
+    fetchServiceData(selectedDate);
+    fetchDailyData(startDate, endDate);
+  }, [startDate, endDate, selectedServiceType, selectedBarangay]);
 
   const fetchUserCount = async () => {
     try {
@@ -101,52 +135,6 @@ function App() {
     } catch (error) {
       console.error("Error fetching user count:", error);
     }
-  };
-
-  const fetchTransactions = async (timeInterval, customDate) => {
-    const currentDate = customDate || new Date();
-    let startDate;
-    let count; // Declare count variable
-
-    switch (timeInterval) {
-      case "day":
-        startDate = new Date(
-          currentDate.getFullYear(),
-          currentDate.getMonth(),
-          currentDate.getDate()
-        );
-        break;
-      case "week":
-        startDate = getStartOfWeek(currentDate);
-        break;
-      case "month":
-        startDate = getStartOfMonth(currentDate);
-        break;
-      case "year":
-        startDate = getStartOfYear(currentDate);
-        break;
-      default:
-        startDate = currentDate;
-    }
-
-    const transactions = await getTransactions(startDate, currentDate);
-    count = transactions.length; // Assign a value to count
-    updateTransactionCount(timeInterval, count);
-  };
-
-  const getStartOfWeek = (date) => {
-    const dayOfWeek = date.getDay(); // 0 is Sunday, 1 is Monday, etc.
-    const startDate = new Date(date);
-    startDate.setDate(date.getDate() - dayOfWeek); // Move to the start of the current week
-    return startDate;
-  };
-
-  const getStartOfMonth = (date) => {
-    return new Date(date.getFullYear(), date.getMonth(), 1);
-  };
-
-  const getStartOfYear = (date) => {
-    return new Date(date.getFullYear(), 0, 1);
   };
 
   const getTransactions = async (startDate, endDate) => {
@@ -234,255 +222,6 @@ function App() {
     }
   };
 
-  const chartData = {
-    day: {
-      series: [dayTransactions],
-      options: {
-        chart: {
-          type: "radialBar",
-        },
-        plotOptions: {
-          radialBar: {
-            offsetY: 0,
-            startAngle: 0,
-            endAngle: 360,
-            hollow: {
-              margin: 5,
-              size: "50%",
-              background: "transparent",
-              image: undefined,
-              imageOffsetX: 0,
-              imageOffsetY: 0,
-              position: "front",
-            },
-            dataLabels: {
-              name: {
-                show: true,
-                fontSize: "10px",
-                fontWeight: "light",
-                color: "#000",
-                offsetY: -5,
-              },
-              value: {
-                show: true,
-                offsetY: 5,
-                color: "blue",
-                fontSize: "25px",
-                fontWeight: "bold",
-                formatter: function (val) {
-                  return val;
-                },
-              },
-            },
-          },
-        },
-        fill: {
-          colors: ["#F2233B"],
-        },
-        labels: ["Today"],
-      },
-    },
-    week: {
-      series: [weekTransactions],
-      options: {
-        chart: {
-          type: "radialBar",
-        },
-        plotOptions: {
-          radialBar: {
-            offsetY: 0,
-            startAngle: 0,
-            endAngle: 360,
-            hollow: {
-              margin: 5,
-              size: "50%",
-              background: "transparent",
-              image: undefined,
-              imageOffsetX: 0,
-              imageOffsetY: 0,
-              position: "front",
-            },
-            dataLabels: {
-              name: {
-                show: true,
-                fontSize: "10px",
-                fontWeight: "light",
-                color: "#000",
-                offsetY: -5,
-              },
-              value: {
-                show: true,
-                offsetY: 5,
-                color: "blue",
-                fontSize: "25px",
-                fontWeight: "bold",
-                formatter: function (val) {
-                  return val;
-                },
-              },
-            },
-          },
-        },
-        fill: {
-          colors: ["#4B07C0"],
-        },
-        labels: ["This Week"],
-      },
-    },
-    month: {
-      series: [monthTransactions],
-      options: {
-        chart: {
-          type: "radialBar",
-        },
-        plotOptions: {
-          radialBar: {
-            offsetY: 0,
-            startAngle: 0,
-            endAngle: 360,
-            hollow: {
-              margin: 5,
-              size: "50%",
-              background: "transparent",
-              image: undefined,
-              imageOffsetX: 0,
-              imageOffsetY: 0,
-              position: "front",
-            },
-            dataLabels: {
-              name: {
-                show: true,
-                fontSize: "10px",
-                fontWeight: "light",
-                color: "#000",
-                offsetY: -5,
-              },
-              value: {
-                show: true,
-                offsetY: 5,
-                color: "blue",
-                fontSize: "25px",
-                fontWeight: "bold",
-                formatter: function (val) {
-                  return val;
-                },
-              },
-            },
-          },
-        },
-        fill: {
-          colors: ["#FF7247"], // Change the color of the radial bar
-        },
-        labels: ["This Month"],
-      },
-    },
-    year: {
-      series: [yearTransactions],
-      options: {
-        chart: {
-          type: "radialBar",
-        },
-        plotOptions: {
-          radialBar: {
-            offsetY: 0,
-            startAngle: 0,
-            endAngle: 360,
-            hollow: {
-              margin: 5,
-              size: "50%",
-              background: "transparent",
-              image: undefined,
-              imageOffsetX: 0,
-              imageOffsetY: 0,
-              position: "front",
-            },
-            dataLabels: {
-              name: {
-                show: true,
-                fontSize: "10px",
-                fontWeight: "light",
-                color: "#000",
-                offsetY: -5,
-              },
-              value: {
-                show: true,
-                offsetY: 5,
-                color: "blue",
-                fontSize: "25px",
-                fontWeight: "bold",
-                formatter: function (val) {
-                  return val;
-                },
-              },
-            },
-          },
-        },
-        fill: {
-          colors: ["#00C853"], // Change the color of the radial bar for the year
-        },
-        labels: ["This Year"],
-      },
-    },
-    selectedDate: {
-      series: [], // Fetch the transactions for the selected date and get the count
-      options: {
-        // Radial bar options for the selected date
-      },
-    },
-    users: {
-      series: [userCount],
-      options: {
-        chart: {
-          type: "radialBar",
-        },
-        plotOptions: {
-          radialBar: {
-            offsetY: 0,
-            startAngle: 0,
-            endAngle: 360,
-            hollow: {
-              margin: 5,
-              size: "50%",
-              background: "transparent",
-              image: undefined,
-              imageOffsetX: 0,
-              imageOffsetY: 0,
-              position: "front",
-            },
-            dataLabels: {
-              name: {
-                show: true,
-                fontSize: "10px",
-                fontWeight: "light",
-                color: "#000",
-                offsetY: -5,
-              },
-              value: {
-                show: true,
-                offsetY: 5,
-                color: "blue",
-                fontSize: "25px",
-                fontWeight: "bold",
-                formatter: function (val) {
-                  return val;
-                },
-              },
-            },
-          },
-        },
-        fill: {
-          colors: ["#2196F3"],
-        },
-        labels: ["Total Users"],
-      },
-    },
-  };
-
-  const handleDateChange = (date) => {
-    setSelectedDate(date);
-    fetchTransactions("custom", date);
-  };
-
   const fetchMonthlyData = async () => {
     const monthlyTransactions = await getMonthlyData();
     setMonthlyData(monthlyTransactions);
@@ -552,120 +291,6 @@ function App() {
       return monthlyCount;
     } catch (error) {
       console.error("Error fetching monthly data:", error);
-      return [];
-    }
-  };
-
-  const fetchMonthlyStatusData = async () => {
-    const monthlyStatusData = await getMonthlyStatusData(selectedYear); // Pass selectedYear
-    setMonthlyStatusData(monthlyStatusData);
-  };
-
-  const getMonthlyStatusData = async (year) => {
-    try {
-      // Create an array of queries for the specified date range
-      const collectionQueries = [
-        query(
-          collection(db, "birth_reg"),
-          where(
-            "createdAt",
-            ">",
-            Timestamp.fromDate(new Date(`${year}-01-01`))
-          ),
-          where("createdAt", "<", Timestamp.fromDate(new Date(`${year}-12-31`)))
-        ),
-        query(
-          collection(db, "marriageCert"),
-          where(
-            "createdAt",
-            ">",
-            Timestamp.fromDate(new Date(`${year}-01-01`))
-          ),
-          where("createdAt", "<", Timestamp.fromDate(new Date(`${year}-12-31`)))
-        ),
-        query(
-          collection(db, "deathCert"),
-          where(
-            "createdAt",
-            ">",
-            Timestamp.fromDate(new Date(`${year}-01-01`))
-          ),
-          where("createdAt", "<", Timestamp.fromDate(new Date(`${year}-12-31`)))
-        ),
-        query(
-          collection(db, "job"),
-          where(
-            "createdAt",
-            ">",
-            Timestamp.fromDate(new Date(`${year}-01-01`))
-          ),
-          where("createdAt", "<", Timestamp.fromDate(new Date(`${year}-12-31`)))
-        ),
-        query(
-          collection(db, "businessPermit"),
-          where(
-            "createdAt",
-            ">",
-            Timestamp.fromDate(new Date(`${year}-01-01`))
-          ),
-          where("createdAt", "<", Timestamp.fromDate(new Date(`${year}-12-31`)))
-        ),
-        query(
-          collection(db, "appointments"),
-          where(
-            "createdAt",
-            ">",
-            Timestamp.fromDate(new Date(`${year}-01-01`))
-          ),
-          where("createdAt", "<", Timestamp.fromDate(new Date(`${year}-12-31`)))
-        ),
-      ];
-
-      // Execute all queries concurrently
-      const queryResults = await Promise.all(collectionQueries.map(getDocs));
-
-      // Extract data from the query results
-      const allData = queryResults.flatMap((snapshot) =>
-        snapshot.docs.map((doc) => {
-          const data = doc.data();
-          const createdAt = data.createdAt.toDate();
-          return { ...data, createdAt };
-        })
-      );
-
-      // Calculate monthly count for each status
-      const monthlyStatusCount = Array.from({ length: 12 }, (_, monthIndex) => {
-        const monthName = new Date(year, monthIndex, 1).toLocaleString(
-          "default",
-          {
-            month: "long",
-          }
-        );
-
-        const countByStatus = (status) =>
-          allData.filter((item) => {
-            const itemMonth = item.createdAt.getMonth();
-            return itemMonth === monthIndex && item.status === status;
-          }).length;
-
-        const statusCount = {
-          month: monthName,
-          pending: countByStatus("Pending"),
-          onProcess: countByStatus("On Process"),
-          completed: countByStatus("Completed"),
-          rejected: countByStatus("Rejected"),
-        };
-
-        console.log(`${monthName} Status Count:`, statusCount);
-
-        return statusCount;
-      });
-
-      console.log("Monthly Status Count:", monthlyStatusCount);
-
-      return monthlyStatusCount;
-    } catch (error) {
-      console.error("Error fetching monthly status data:", error);
       return [];
     }
   };
@@ -745,6 +370,45 @@ function App() {
       ),
       query(
         collection(db, "businessPermit"),
+        where(
+          "createdAt",
+          ">=",
+          Timestamp.fromDate(new Date(`${currentYear}-01-01`))
+        ),
+        where(
+          "createdAt",
+          "<=",
+          Timestamp.fromDate(new Date(`${currentYear}-12-31`))
+        )
+      ),
+      query(
+        collection(db, "appointments"),
+        where(
+          "createdAt",
+          ">=",
+          Timestamp.fromDate(new Date(`${currentYear}-01-01`))
+        ),
+        where(
+          "createdAt",
+          "<=",
+          Timestamp.fromDate(new Date(`${currentYear}-12-31`))
+        )
+      ),
+      query(
+        collection(db, "marriage_reg"),
+        where(
+          "createdAt",
+          ">=",
+          Timestamp.fromDate(new Date(`${currentYear}-01-01`))
+        ),
+        where(
+          "createdAt",
+          "<=",
+          Timestamp.fromDate(new Date(`${currentYear}-12-31`))
+        )
+      ),
+      query(
+        collection(db, "death_reg"),
         where(
           "createdAt",
           ">=",
@@ -891,36 +555,143 @@ function App() {
 
       const queryResults = await Promise.all(collectionQueries.map(getDocs));
 
-      const collectionData = queryResults.map((snapshot) =>
+      const collectionData = queryResults.map((snapshot, index) =>
         snapshot.docs.map((doc) => {
           const data = doc.data();
-          return data.createdAt.toDate().getMonth();
+          return {
+            serviceType: getServiceTypeName(index),
+            createdAt: data.createdAt.toDate(),
+          };
         })
       );
 
-      const monthCounts = collectionData.flat().reduce((acc, month) => {
-        acc[month] = (acc[month] || 0) + 1;
+      const monthlyDataForBarangay = collectionData.flat();
+
+      // Set service type monthly data
+      setServiceTypeMonthlyData(monthlyDataForBarangay);
+
+      const monthCounts = monthlyDataForBarangay.reduce((acc, item) => {
+        const monthIndex = item.createdAt.getMonth();
+        acc[monthIndex] = (acc[monthIndex] || 0) + 1;
         return acc;
       }, {});
 
-      const monthlyDataForBarangay = Array.from(
-        { length: 12 },
-        (_, monthIndex) => ({
-          month: new Date(selectedYear, monthIndex, 1).toLocaleString(
-            "default",
-            {
-              month: "long",
-            }
-          ),
-          count: monthCounts[monthIndex] || 0,
-        })
-      );
+      const monthlyData = Array.from({ length: 12 }, (_, monthIndex) => ({
+        month: new Date(selectedYear, monthIndex, 1).toLocaleString("default", {
+          month: "long",
+        }),
+        count: monthCounts[monthIndex] || 0,
+      }));
 
-      return monthlyDataForBarangay;
+      return monthlyData;
     } catch (error) {
       console.error("Error fetching monthly data for barangay:", error);
       return [];
     }
+  };
+
+  const handleServiceTypeSelection = (selectedServiceType) => {
+    console.log(`Selected Service Type: ${selectedServiceType}`);
+    setSelectedServiceType(selectedServiceType);
+  };
+
+  const fetchDrillDownData = async () => {
+    if (selectedServiceType && selectedBarangay) {
+      const drillDownData = await getDrillDownData(
+        selectedServiceType,
+        selectedBarangay
+      );
+      setDrillDownData(drillDownData);
+    }
+  };
+
+  const getDrillDownData = async (serviceType, barangay) => {
+    try {
+      const query = query(
+        getServiceTypeCollection(serviceType),
+        where("userBarangay", "==", barangay),
+        where(
+          "createdAt",
+          ">=",
+          Timestamp.fromDate(new Date(`${selectedYear}-01-01`))
+        ),
+        where(
+          "createdAt",
+          "<=",
+          Timestamp.fromDate(new Date(`${selectedYear}-12-31`))
+        )
+      );
+
+      const snapshot = await getDocs(query);
+
+      const drillDownData = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          createdAt: data.createdAt.toDate(),
+        };
+      });
+
+      return drillDownData;
+    } catch (error) {
+      console.error("Error fetching drill-down data:", error);
+      return [];
+    }
+  };
+
+  const renderDrillDownChart = () => {
+    if (selectedServiceType && selectedBarangay) {
+      return (
+        <div className="drilldown-chart">
+          <ReactApexChart
+            options={{
+              chart: {
+                type: "bar",
+                height: 400,
+              },
+              plotOptions: {
+                bar: {
+                  horizontal: false,
+                  columnWidth: "55%",
+                  endingShape: "rounded",
+                },
+              },
+              title: {
+                text: `Transactions for ${selectedServiceType} in ${selectedBarangay}`,
+                align: "center",
+                style: {
+                  fontSize: "16px",
+                  fontWeight: "bold",
+                },
+              },
+              xaxis: {
+                type: "category",
+                categories: drillDownData.map((data) =>
+                  data.createdAt.toLocaleString("default", { month: "long" })
+                ),
+              },
+              yaxis: {
+                title: {
+                  text: "Transaction Count",
+                },
+              },
+              fill: {
+                opacity: 1,
+              },
+            }}
+            series={[
+              {
+                name: selectedServiceType,
+                data: drillDownData.map(() => 1), // Assuming you want to count each transaction as 1
+              },
+            ]}
+            type="bar"
+            width={800}
+            height={400}
+          />
+        </div>
+      );
+    }
+    return null;
   };
 
   const handleBarangaySelection = (selectedBarangay) => {
@@ -931,7 +702,7 @@ function App() {
   const getServiceTypeData = async () => {
     const currentYear = new Date().getFullYear();
     const currentMonth = new Date().getMonth();
-  
+
     const collectionQueries = [
       // Queries for each collection and service type
       query(
@@ -1012,12 +783,38 @@ function App() {
           Timestamp.fromDate(new Date(`${currentYear}-${currentMonth + 1}-31`))
         )
       ),
+      query(
+        collection(db, "marriage_reg"),
+        where(
+          "createdAt",
+          ">=",
+          Timestamp.fromDate(new Date(`${currentYear}-${currentMonth + 1}-01`))
+        ),
+        where(
+          "createdAt",
+          "<=",
+          Timestamp.fromDate(new Date(`${currentYear}-${currentMonth + 1}-31`))
+        )
+      ),
+      query(
+        collection(db, "death_reg"),
+        where(
+          "createdAt",
+          ">=",
+          Timestamp.fromDate(new Date(`${currentYear}-${currentMonth + 1}-01`))
+        ),
+        where(
+          "createdAt",
+          "<=",
+          Timestamp.fromDate(new Date(`${currentYear}-${currentMonth + 1}-31`))
+        )
+      ),
     ];
-  
+
     try {
       // Execute all queries concurrently
       const queryResults = await Promise.all(collectionQueries.map(getDocs));
-  
+
       // Extract data from the query results
       const serviceTypeData = queryResults.map((snapshot, index) => {
         const serviceTypeName = getServiceTypeName(index);
@@ -1026,27 +823,195 @@ function App() {
           data: snapshot.size, // Size gives the total count
         };
       });
-  
+
       console.log("Service Type Data:", serviceTypeData);
-  
+
       return serviceTypeData;
     } catch (error) {
       console.error("Error fetching service type data:", error);
       return [];
     }
   };
-  
+
   const getServiceTypeName = (index) => {
     // Helper function to map index to service type name
     const serviceTypes = [
       "Birth Registration",
-      "Marriage Certificate",
-      "Death Certificate",
+      "Marriage Registration",
+      "Death Registration",
       "Job Application",
       "Business Permit",
       "Appointments",
+      "Request Copy of Marriage Certificate",
+      "Request Copy of Death Certificate",
     ];
     return serviceTypes[index];
+  };
+
+  const handleBarangayClick = (event, chartContext, config) => {
+    // Check if a bar is clicked and config is defined
+    if (
+      config &&
+      config.seriesIndex === 0 &&
+      config.dataPointIndex !== undefined
+    ) {
+      const clickedBarangay =
+        yearlyDataForBarangay[config.dataPointIndex].barangay;
+      handleBarangaySelection(clickedBarangay);
+    }
+  };
+
+  const findMostAndLeastAcquiredServices = () => {
+    // Check if monthlyData is defined, if not return default values
+    if (!monthlyData || monthlyData.length === 0) {
+      return {
+        mostAcquiredService: {},
+        leastAcquiredService: {},
+        mostAcquiredPercentage: 0,
+        leastAcquiredPercentage: 0,
+      };
+    }
+
+    const sortedData = [...serviceTypeData].sort((a, b) => b.data - a.data);
+
+    const mostAcquiredService = sortedData[0];
+    const leastAcquiredService = sortedData[sortedData.length - 1];
+
+    const mostAcquiredPercentage =
+      (mostAcquiredService.data / monthlyData.length) * 100;
+    const leastAcquiredPercentage =
+      (leastAcquiredService.data / monthlyData.length) * 100;
+
+    return {
+      mostAcquiredService,
+      leastAcquiredService,
+      mostAcquiredPercentage,
+      leastAcquiredPercentage,
+    };
+  };
+
+  const {
+    mostAcquiredService,
+    leastAcquiredService,
+    mostAcquiredPercentage,
+    leastAcquiredPercentage,
+  } = findMostAndLeastAcquiredServices();
+
+  const currentMonthName = new Intl.DateTimeFormat("en-US", {
+    month: "long",
+  }).format(new Date());
+
+  const fetchDailyData = async (start, end) => {
+    const startOfDay = new Date(start);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(end);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const promises = serviceTypes.map(async (serviceType) => {
+      try {
+        const q = query(
+          collection(db, serviceType),
+          where("createdAt", ">=", startOfDay),
+          where("createdAt", "<=", endOfDay)
+        );
+
+        const snapshot = await getDocs(q);
+        const dataPoints = Array.from(
+          { length: calculateDateDifference(start, end) + 1 },
+          (_, index) => {
+            const currentDate = new Date(start);
+            currentDate.setDate(currentDate.getDate() + index);
+
+            const filteredDocs = snapshot.docs.filter((doc) => {
+              const createdAt = doc.data().createdAt.toDate();
+              return (
+                createdAt.getDate() === currentDate.getDate() &&
+                createdAt.getMonth() === currentDate.getMonth() &&
+                createdAt.getFullYear() === currentDate.getFullYear()
+              );
+            });
+
+            return {
+              date: currentDate,
+              count: filteredDocs.length,
+            };
+          }
+        );
+
+        return { serviceType, dataPoints };
+      } catch (error) {
+        console.error(`Error fetching ${serviceType} data:`, error);
+        return { serviceType, dataPoints: [] }; // Assuming empty array on error
+      }
+    });
+
+    try {
+      const results = await Promise.all(promises);
+      setDailyData(results);
+    } catch (error) {
+      console.error("Error fetching daily data:", error);
+    }
+  };
+
+  const calculateDateDifference = (startDate, endDate) => {
+    const oneDay = 24 * 60 * 60 * 1000; // hours * minutes * seconds * milliseconds
+    const diffDays = Math.round(
+      Math.abs((new Date(startDate) - new Date(endDate)) / oneDay)
+    );
+    return diffDays;
+  };
+
+  const serviceTypes = [
+    "birth_reg",
+    "appointments",
+    "marriageCert",
+    "deathCert",
+    "businessPermit",
+    "job",
+  ];
+
+  const fetchServiceData = async (date) => {
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const promises = serviceTypes.map(async (serviceType) => {
+      try {
+        const q = query(
+          collection(db, serviceType),
+          where("createdAt", ">=", startOfDay),
+          where("createdAt", "<=", endOfDay)
+        );
+
+        const snapshot = await getDocs(q);
+        const count = snapshot.size;
+
+        console.log(`Service Type: ${serviceType}, Count: ${count}`);
+        return { serviceType, count };
+      } catch (error) {
+        console.error(`Error fetching ${serviceType} data:`, error);
+        return { serviceType, count: 0 }; // Assuming 0 count on error
+      }
+    });
+
+    try {
+      const results = await Promise.all(promises);
+      console.log("Results from Firebase:", results);
+      setDailyServiceData(results);
+    } catch (error) {
+      console.error("Error fetching daily service data:", error);
+    }
+  };
+
+  const handleStartDateChange = (date) => {
+    setStartDate(date);
+  };
+
+  const handleEndDateChange = (date) => {
+    setEndDate(date);
   };
 
   return (
@@ -1067,165 +1032,79 @@ function App() {
           </div>
         </div>
 
-        <div className="screen">
-          <div className="categories-container">
-            <Link to="/birthReg" className="link">
-              <button className="categories1">
-                <h5>Certificate of Live Birth</h5>
-              </button>
-            </Link>
-
-            <Link to="/marriageCert" className="link">
-              <button className="categories1">
-                <h5>Marriage Certificate</h5>
-              </button>
-            </Link>
-
-            <Link to="/deathCert" className="link">
-              <button className="categories1">
-                <h5>Certificate of Death Certificate</h5>
-              </button>
-            </Link>
-
-            <Link to="/analytics2023" className="link">
-              <button className="categories1">
-                <h5>Business Permit</h5>
-              </button>
-            </Link>
-
-            <Link to="/job" className="link">
-              <button className="categories1">
-                <h5>Job Application</h5>
-              </button>
-            </Link>
-          </div>
-        </div>
-
-        <div className="reports">
-          Analytics
-          <div className="report">
-            <div className="day">
-              <Chart
-                options={chartData.day.options}
-                series={chartData.day.series}
-                type="radialBar"
-                height="200"
+        <div className="line-graph">
+          <div className="date">
+            <div className="datepicker">
+              <label>Start Date:</label>
+              <DatePicker
+                selected={startDate}
+                onChange={handleStartDateChange}
+                dateFormat="MMMM d, yyyy"
               />
             </div>
-            <div className="week">
-              <Chart
-                options={chartData.week.options}
-                series={chartData.week.series}
-                type="radialBar"
-                height="200"
-              />
-            </div>
-            <div className="month">
-              <Chart
-                options={chartData.month.options}
-                series={chartData.month.series}
-                type="radialBar"
-                height="200"
-              />
-            </div>
-            <div className="year">
-              <Chart
-                options={chartData.year.options}
-                series={chartData.year.series}
-                type="radialBar"
-                height="200"
-              />
-            </div>
-            <div className="users-chart">
-              <Chart
-                options={chartData.users.options}
-                series={chartData.users.series}
-                type="radialBar"
-                height="200"
+            <div className="datepicker">
+              <label>End Date:</label>
+              <DatePicker
+                selected={endDate}
+                onChange={handleEndDateChange}
+                dateFormat="MMMM d, yyyy"
               />
             </div>
           </div>
-        </div>
-
-        <div className="analytics">
-          <div className="monthly-status-chart">
-            <ReactApexChart
+          <div>
+            <Chart
               options={{
                 chart: {
-                  type: "bar",
+                  type: "line",
                 },
                 title: {
-                  text: "Total Transactions per Month based on Status",
+                  text: "TOTAL TRANSACTIONS PER BARANGAY",
                   align: "center",
                   style: {
-                    fontSize: "16px",
+                    fontSize: "17px",
                     fontWeight: "bold",
+                    marginTop: "40px",
                   },
                 },
                 xaxis: {
-                  categories: monthlyStatusData.map((data) => data.month),
-                },
-                plotOptions: {
-                  bar: {
-                    horizontal: false,
-                    columnWidth: "95%", // Adjust this value to control the width of the bars
-                    endingShape: "rounded",
-                  },
+                  categories: Array.from(
+                    { length: calculateDateDifference(startDate, endDate) + 1 },
+                    (_, index) => {
+                      const day = new Date(startDate);
+                      day.setDate(day.getDate() + index);
+                      return day.toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      });
+                    }
+                  ),
                 },
               }}
-              series={[
-                {
-                  name: "Pending",
-                  data: monthlyStatusData.map((data) => data.pending),
-                },
-                {
-                  name: "On Process",
-                  data: monthlyStatusData.map((data) => data.onProcess),
-                },
-                {
-                  name: "Completed",
-                  data: monthlyStatusData.map((data) => data.completed),
-                },
-                {
-                  name: "Rejected",
-                  data: monthlyStatusData.map((data) => data.rejected),
-                },
-              ]}
-              type="bar"
-              width={1000}
+              series={dailyData.map((serviceData) => ({
+                name: serviceData.serviceType,
+                data: Array.from(
+                  { length: calculateDateDifference(startDate, endDate) + 1 },
+                  (_, index) => {
+                    const currentDate = new Date(startDate);
+                    currentDate.setDate(currentDate.getDate() + index);
+                    const dataPoint = serviceData.dataPoints.find(
+                      (item) =>
+                        item.date.getDate() === currentDate.getDate() &&
+                        item.date.getMonth() === currentDate.getMonth() &&
+                        item.date.getFullYear() === currentDate.getFullYear()
+                    );
+                    return dataPoint ? dataPoint.count : 0;
+                  }
+                ),
+              }))}
+              type="line"
+              width={700}
               height={400}
             />
           </div>
         </div>
 
         <div className="parts">
-          <div className="monthly-chart">
-            <ReactApexChart
-              options={{
-                chart: {
-                  type: "bar",
-                },
-                title: {
-                  text: "Total Transactions per Month",
-                  align: "center",
-                  style: {
-                    fontSize: "16px",
-                    fontWeight: "bold",
-                  },
-                },
-                xaxis: {
-                  categories: monthlyData.map((data) => data.month),
-                },
-              }}
-              series={[
-                { name: "Count", data: monthlyData.map((data) => data.count) },
-              ]}
-              type="bar"
-              width={500}
-              height={400}
-            />
-          </div>
-
           <div className="polar-area-chart">
             <ReactApexChart
               options={{
@@ -1233,7 +1112,7 @@ function App() {
                   type: "polarArea",
                 },
                 title: {
-                  text: "Total Transactions by Service Type for this month",
+                  text: "MOST ACQUIRED SERVICE FOR THE MONTH OF " + currentMonthName.toUpperCase(),
                   align: "center",
                   style: {
                     fontSize: "16px",
@@ -1243,27 +1122,45 @@ function App() {
                 labels: serviceTypeData.map((data) => data.name),
                 fill: {
                   opacity: 0.8,
-                  colors: ["#4285F4", "#34A853", "#FBBC05", "#EA4335", "#FF7252", "#4B07C0"],
+                  colors: [
+                    "#4285F4",
+                    "#34A853",
+                    "#FBBC05",
+                    "#EA4335",
+                    "#FF7252",
+                    "#4B07C0",
+                    "#008A63",
+                    "#AD0040",
+                  ],
                 },
                 stroke: {
                   width: 1,
-                  colors: undefined
+                  colors: undefined,
                 },
                 yaxis: {
-                  show: false
+                  show: false,
                 },
                 legend: {
-                  position: 'bottom'
+                  position: "bottom",
                 },
                 plotOptions: {
                   polarArea: {
                     rings: {
-                      strokeWidth: 1
+                      strokeWidth: 1,
                     },
                     spokes: {
-                      strokeWidth: 1
+                      strokeWidth: 1,
                     },
-                  }
+                  },
+                },
+                dataLabels: {
+                  enabled: true,
+                  formatter: function (val, opts) {
+                    return opts.w.globals.series[opts.seriesIndex];
+                  },
+                  background: {
+                    enabled: false,
+                  },
                 },
               }}
               series={serviceTypeData.map((data) => data.data)}
@@ -1272,9 +1169,24 @@ function App() {
               height={400}
             />
           </div>
+          <div className="directions">
+            {/* Display the most and least acquired services */}
+            <h1>
+              The most acquired service this {currentMonthName} is{" "}
+              {mostAcquiredService.name} <br/> with a total of{" "}
+              {mostAcquiredService.data} transactions or (
+              {mostAcquiredPercentage.toFixed(2)}%).
+            </h1>
+            <h1>
+              The least acquired service this {currentMonthName} is{" "}
+              {leastAcquiredService.name} <br/> with a total of{" "}
+              {leastAcquiredService.data} transactions or (
+              {leastAcquiredPercentage.toFixed(2)}%).
+            </h1>
+          </div>
         </div>
 
-        <div className="yearly-barangay-chart">
+        <div className="yearly-barangay-chart" onClick={handleBarangayClick}>
           <ReactApexChart
             options={{
               chart: {
@@ -1283,7 +1195,7 @@ function App() {
               },
               plotOptions: {
                 bar: {
-                  horizontal: true,
+                  horizontal: false,
                   distributed: true,
                   barHeight: "50%",
                   dataLabels: {
@@ -1307,7 +1219,6 @@ function App() {
                   rotate: -45,
                 },
               },
-              // ... (other options)
             }}
             series={[
               {
@@ -1318,16 +1229,9 @@ function App() {
             type="bar"
             width={800}
             height={400}
-            // Add a click event handler
-            events={{
-              dataPointSelection: function (event, chartContext, config) {
-                const selectedBarangay =
-                  yearlyDataForBarangay[config.dataPointIndex].barangay;
-                handleBarangaySelection(selectedBarangay);
-              },
-            }}
           />
         </div>
+        {renderDrillDownChart()}
       </div>
     </div>
   );

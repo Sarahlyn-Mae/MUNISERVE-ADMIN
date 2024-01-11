@@ -176,6 +176,16 @@
   height: fit-content;
 }
 
+.filter-selects {
+  padding: 8px;
+  margin-right: 5px;
+  border: 1px solid black;
+  border-radius: 4px;
+  width: 170px;
+  font-size: 14px;
+  height: fit-content;
+}
+
 label {
   font-size: 15px;
 }

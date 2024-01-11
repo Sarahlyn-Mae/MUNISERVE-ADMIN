@@ -12,7 +12,8 @@ import {
   faUser,
   faTeletype,
   faFileLines,
-  faFolder
+  faFolder,
+  faBarChart
 } from '@fortawesome/free-solid-svg-icons';
 import logo from '../assets/logo.png';
 
@@ -164,6 +165,13 @@ const Sidebar = () => {
           <SidebarMenuItem isActive={activeMenu === '/reports'}>
             <FontAwesomeIcon icon={faFolder} className="icon" />
             Reports
+          </SidebarMenuItem>
+        </Link>
+
+        <Link to="/analytics" className="link">
+          <SidebarMenuItem isActive={activeMenu === '/analytics'}>
+            <FontAwesomeIcon icon={faBarChart} className="icon" />
+            Analytics
           </SidebarMenuItem>
         </Link>
 

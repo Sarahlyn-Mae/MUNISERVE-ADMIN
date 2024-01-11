@@ -48,8 +48,10 @@ function App() {
   // Mapping between collectionName and display names
   const collectionTypeMap = {
     birth_reg: "Birth Registration",
-    marriageCert: "Marriage Certificate",
-    deathCert: "Death Certificate",
+    marriage_reg: "Marriage Registration",
+    marriageCert: "Request Copy of Marriage Certificate",
+    fdeath_reg: "Death Registration",
+    deathCert: "Request Copy of Death Certificate",
     appointments: "Appointments",
     businessPermit: "Business Permit",
     job: "Job Application",
@@ -64,6 +66,8 @@ function App() {
         "appointments",
         "job",
         "businessPermit",
+        "marriage_reg",
+        "death_reg",
       ];
       let allData = [];
 
@@ -110,83 +114,81 @@ function App() {
   }, []);
 
   // PDF File
-  const exportDataAsPDF = () => {
-    const columns = [
-      {
-        Header: "Name of Applicant",
-        accessor: "userName",
-      },
-      {
-        Header: "Service Type",
-        accessor: "collectionType", // New column for service or collection type
-      },
-      {
-        Header: "Residency",
-        accessor: "userBarangay",
-      },
-      {
-        Header: "Mobile No.",
-        accessor: "userContact",
-      },
-      {
-        Header: "Email",
-        accessor: "userEmail",
-      },
-      {
-        Header: "Date of Application",
-        accessor: "createdAt",
-      },
-      {
-        Header: "Status",
-        accessor: "status",
-      },
-      {
-        Header: "Actions",
-        accessor: "actions",
-        Cell: ({ row }) => <button onClick={() => openModal(row)}>View</button>,
-      },
-      // ... other columns ...
-    ];
+  const exportDataAsPDF = async () => {
+  // Wait for data to be fetched
+  await fetchData();
 
-    // Create a PDF document
-    const pdfDoc = new jsPDF();
+  const columns = [
+    {
+      Header: "Name of Applicant",
+      accessor: "userName",
+    },
+    {
+      Header: "Service Type",
+      accessor: "collectionType",
+    },
+    {
+      Header: "Residency",
+      accessor: "userBarangay",
+    },
+    {
+      Header: "Mobile No.",
+      accessor: "userContact",
+    },
+    {
+      Header: "Email",
+      accessor: "userEmail",
+    },
+    {
+      Header: "Date of Application",
+      accessor: "createdAt",
+    },
+    {
+      Header: "Status",
+      accessor: "status",
+    },
+    // ... other columns ...
+  ];
 
-    // Set font size and style
-    pdfDoc.setFontSize(12);
-    pdfDoc.setFont("helvetica", "bold");
+  // Create a PDF document with landscape orientation
+  const pdfDoc = new jsPDF({ orientation: "landscape" });
 
-    // Add header row to PDF as a table
-    pdfDoc.autoTable({
-      head: [columns.map((column) => column.Header)],
-      startY: 10,
-      styles: { fontSize: 12, cellPadding: 2 },
-    });
+  // Set font size and style
+  pdfDoc.setFontSize(12);
+  pdfDoc.setFont("helvetica", "bold");
 
-    // Add data rows to PDF as a table
-    const dataRows = data.map((item) =>
-      columns.map((column) => {
-        // Format date as a string if it exists
-        if (column.accessor === "date" && item[column.accessor]) {
-          return (
-            (item[column.accessor]?.toDate?.() || "").toLocaleDateString() || ""
-          );
-        }
-        return item[column.accessor] || "";
-      })
-    );
+  // Add header row to PDF as a table
+  pdfDoc.autoTable({
+    head: [columns.map((column) => column.Header)],
+    startY: 10,
+    styles: { fontSize: 12, cellPadding: 2 },
+  });
 
-    pdfDoc.autoTable({
-      body: dataRows,
-      startY: pdfDoc.autoTable.previous.finalY + 2,
-      styles: { fontSize: 10, cellPadding: 2 },
-    });
+  // Add data rows to PDF as a table
+const dataRows = filteredData.map((item) =>
+columns.map((column) => {
+  // Format date as a string if it exists and the column is "createdAt"
+  if (column.accessor === "createdAt" && item[column.accessor]) {
+    const dateValue = item[column.accessor]?.toDate?.();
+    return dateValue ? new Date(dateValue).toLocaleDateString() : "";
+  }
+  return item[column.accessor] || "";
+})
+);
 
-    // Save the PDF
-    pdfDoc.save("Barangay Tomagoktok.pdf");
-  };
+  pdfDoc.autoTable({
+    body: dataRows,
+    startY: pdfDoc.autoTable.previous.finalY + 2,
+    styles: { fontSize: 10, cellPadding: 2 },
+  });
+
+  // Save the PDF
+  pdfDoc.save("All Records.pdf");
+};
+
 
   // Function to export data as CSV
-  const exportDataAsCSV = () => {
+  const exportFilteredDataAsCSV = () => {
     const columns = [
       {
         Header: "Name of Applicant",
@@ -243,7 +245,7 @@ function App() {
       columns.map((column) => `${column.width || ""}`).join(",") + "\n";
 
     // Add data rows to CSV
-    data.forEach((item) => {
+    filteredData.forEach((item) => {
       const row =
         columns
           .map((column) => {
@@ -274,7 +276,7 @@ function App() {
     // Create a download link
     const link = document.createElement("a");
     link.href = window.URL.createObjectURL(blob);
-    link.download = "Barangay Tomagoktok.csv";
+    link.download = "All Records.csv";
 
     // Append the link to the document
     document.body.appendChild(link);
@@ -291,7 +293,7 @@ function App() {
     if (exportType === "pdf") {
       exportDataAsPDF();
     } else if (exportType === "csv") {
-      exportDataAsCSV();
+      exportFilteredDataAsCSV();
     }
     // Add more conditions for other export types if needed
   };
@@ -487,11 +489,6 @@ const filteredData = data.filter((item) => {
               className="filter"
             >
               <option value="">Year</option>
-              <option value="2031">2031</option>
-              <option value="2030">2030</option>
-              <option value="2029">2029</option>
-              <option value="2028">2028</option>
-              <option value="2027">2027</option>
               <option value="2026">2026</option>
               <option value="2025">2025</option>
               <option value="2024">2024</option>
@@ -602,9 +599,9 @@ const filteredData = data.filter((item) => {
           >
             <option value="">Service Type</option>
             <option value="Birth Registration">Birth Registration</option>
-            <option value="Marriage Certificate">Marriage Certificate</option>
+            <option value="Marriage Certificate">Request Copy of Marriage Certificate</option>
             <option value="Marriage Registration">Marriage Registration</option>
-            <option value="Death Certificate">Death Certificate</option>
+            <option value="Death Certificate">Request Copy of Death Certificate</option>
             <option value="Death Registration">Death Registration</option>
             <option value="Job Application">Job Application</option>
             <option value="Business Permit">Business Permit</option>

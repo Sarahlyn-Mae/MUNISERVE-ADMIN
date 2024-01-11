@@ -285,7 +285,7 @@ function App() {
           <select
             value={selectedBarangayFilter}
             onChange={handleBarangayFilterChange}
-            className="filters"
+            className="filter-selects"
           >
             <option value="">Filter Barangays</option>
             <option value="Bagong Silang">Bagong Silang</option>
