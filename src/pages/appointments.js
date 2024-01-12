@@ -343,8 +343,6 @@ const exportDataAsCSV = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="search-input"
           />
-
-          {/* Filter dropdowns */}
           <div className="filter-containers">
             <select
               value={departmentFilter}
@@ -461,10 +459,9 @@ const exportDataAsCSV = () => {
               <option value="Disapproved">Disapproved</option>
               {/* Add more options as needed */}
             </select>
-          </div>
-        
-          <div>
+            
             <DropdownButton handleExport={handleExport} />
+
           </div>
         </div>
 

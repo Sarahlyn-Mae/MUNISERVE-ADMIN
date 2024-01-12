@@ -551,10 +551,9 @@ function App() {
               <option value="Pending">Pending</option>
             </select>
           </div>
-        </div>
+          <DropdownButton handleExport={handleExport} />
 
-        {/* DropdownButton component for export */}
-        <DropdownButton handleExport={handleExport} />
+        </div>
 
         {isModalOpen ? ( // Render modal content if the modal is open
           <div className="modal">

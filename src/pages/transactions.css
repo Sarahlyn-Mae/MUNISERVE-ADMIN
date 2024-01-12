@@ -93,6 +93,7 @@
 
 .screen {
     margin-top: 80px;
+    margin-bottom: 20px;
 }
 
 html, body {
@@ -412,7 +413,7 @@ label {
 
 .container h1 {
     margin-left: 60px;
-    margin-top: 90px;
+    margin-top: 20px;
     font-weight: bold;
     font-size: 30px;
 }

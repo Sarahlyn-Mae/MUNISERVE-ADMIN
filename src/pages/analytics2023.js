@@ -78,6 +78,9 @@ function App() {
   const [dailyData, setDailyData] = useState([]);
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
+  const [barangayFilter, setBarangayFilter] = useState("");
+  const [yearFilter, setYearFilter] = useState("");
+  const [serviceFilter, setServiceFilter] = useState("");
 
   const { user } = useAuth();
   const [userEmail, setUserEmail] = useState("");
@@ -110,17 +113,7 @@ function App() {
 
     fetchServiceTypeData();
 
-    const fetchDrillDownData = async () => {
-      if (selectedServiceType && selectedBarangay) {
-        const drillDownData = await getDrillDownData(
-          selectedServiceType,
-          selectedBarangay
-        );
-        setDrillDownData(drillDownData);
-      }
-    };
 
-    fetchDrillDownData();
     fetchServiceData(selectedDate);
     fetchDailyData(startDate, endDate);
   }, [startDate, endDate, selectedServiceType, selectedBarangay]);
@@ -463,7 +456,6 @@ function App() {
     }
   };
 
-  // Fetch monthly data for the selected barangay
   const getMonthlyDataForBarangay = async (barangay) => {
     try {
       const collectionQueries = [
@@ -588,110 +580,6 @@ function App() {
       console.error("Error fetching monthly data for barangay:", error);
       return [];
     }
-  };
-
-  const handleServiceTypeSelection = (selectedServiceType) => {
-    console.log(`Selected Service Type: ${selectedServiceType}`);
-    setSelectedServiceType(selectedServiceType);
-  };
-
-  const fetchDrillDownData = async () => {
-    if (selectedServiceType && selectedBarangay) {
-      const drillDownData = await getDrillDownData(
-        selectedServiceType,
-        selectedBarangay
-      );
-      setDrillDownData(drillDownData);
-    }
-  };
-
-  const getDrillDownData = async (serviceType, barangay) => {
-    try {
-      const query = query(
-        getServiceTypeCollection(serviceType),
-        where("userBarangay", "==", barangay),
-        where(
-          "createdAt",
-          ">=",
-          Timestamp.fromDate(new Date(`${selectedYear}-01-01`))
-        ),
-        where(
-          "createdAt",
-          "<=",
-          Timestamp.fromDate(new Date(`${selectedYear}-12-31`))
-        )
-      );
-
-      const snapshot = await getDocs(query);
-
-      const drillDownData = snapshot.docs.map((doc) => {
-        const data = doc.data();
-        return {
-          createdAt: data.createdAt.toDate(),
-        };
-      });
-
-      return drillDownData;
-    } catch (error) {
-      console.error("Error fetching drill-down data:", error);
-      return [];
-    }
-  };
-
-  const renderDrillDownChart = () => {
-    if (selectedServiceType && selectedBarangay) {
-      return (
-        <div className="drilldown-chart">
-          <ReactApexChart
-            options={{
-              chart: {
-                type: "bar",
-                height: 400,
-              },
-              plotOptions: {
-                bar: {
-                  horizontal: false,
-                  columnWidth: "55%",
-                  endingShape: "rounded",
-                },
-              },
-              title: {
-                text: `Transactions for ${selectedServiceType} in ${selectedBarangay}`,
-                align: "center",
-                style: {
-                  fontSize: "16px",
-                  fontWeight: "bold",
-                },
-              },
-              xaxis: {
-                type: "category",
-                categories: drillDownData.map((data) =>
-                  data.createdAt.toLocaleString("default", { month: "long" })
-                ),
-              },
-              yaxis: {
-                title: {
-                  text: "Transaction Count",
-                },
-              },
-              fill: {
-                opacity: 1,
-              },
-            }}
-            series={[
-              {
-                name: selectedServiceType,
-                data: drillDownData.map(() => 1), // Assuming you want to count each transaction as 1
-              },
-            ]}
-            type="bar"
-            width={800}
-            height={400}
-          />
-        </div>
-      );
-    }
-    return null;
   };
 
   const handleBarangaySelection = (selectedBarangay) => {
@@ -1012,6 +900,18 @@ function App() {
 
   const handleEndDateChange = (date) => {
     setEndDate(date);
+  };
+
+  const handleBarangayChange = (e) => {
+    setBarangayFilter(e.target.value);
+  };
+
+  const handleYearChange = (e) => {
+    setYearFilter(e.target.value);
+  };
+
+  const handleServiceChange = (e) => {
+    setServiceFilter(e.target.value);
   };
 
   const fetchMonthlyStatusData = async () => {
@@ -1345,7 +1245,6 @@ function App() {
             height={400}
           />
         </div>
-        {renderDrillDownChart()}
 
         <div className="analytics">
           <div className="monthly-status-chart">

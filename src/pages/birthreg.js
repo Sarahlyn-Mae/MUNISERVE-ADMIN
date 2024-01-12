@@ -422,7 +422,6 @@ const filteredData = data.filter((item) => {
   return filterByName && filterByYear && filterByMonth && filterByDay && filterByStatus;
 });
 
-
   const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } = useTable({
       columns,
       data: filteredData,
@@ -578,10 +577,10 @@ const filteredData = data.filter((item) => {
               <option value="Pending">Pending</option>
             </select>
           </div>
-        </div>
 
-        {/* DropdownButton component for export */}
-        <DropdownButton handleExport={handleExport} />
+          <DropdownButton handleExport={handleExport} />
+
+        </div>
 
         {isModalOpen ? ( // Render modal content if the modal is open
           <div className="modal">

@@ -15,6 +15,8 @@ import Birth from "./pages/birthreg";
 import Marriage from "./pages/marriageCert";
 import Death from "./pages/deathCert";
 import Job from "./pages/job";
+import Permit from "./pages/businessPermit";
+
 import Bagong_Silang from "./pages/barangays/Barangay_Bagong_Silang";
 import Bucal from "./pages/barangays/Barangay_Bucal";
 import Cabasag from "./pages/barangays/Barangay_Cabasag";
@@ -68,6 +70,7 @@ const Layout = () => {
             <Route path="/marriageCert" component={Marriage} />
             <Route path="/deathCert" component={Death} />
             <Route path="/job" component={Job} />
+            <Route path="/businessPermit" component={Permit} />
 
             <Route path="/bagong_silang" component={Bagong_Silang} />
             <Route path="/bucal" component={Bucal} />
