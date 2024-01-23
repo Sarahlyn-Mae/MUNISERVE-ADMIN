@@ -362,7 +362,7 @@ h2 {
   margin-top: 10px;
 }
 
-/* Filter container styles */
+.filters,
 .filter-container {
     display: flex;
     margin-inline: 30px;
@@ -379,7 +379,10 @@ h2 {
     border-radius: 4px;
     width: 120px;
     font-size: 14px;
-    
+}
+
+.filterss {
+    margin-left: 70px;
 }
 
 label {
@@ -418,18 +421,45 @@ label {
     font-size: 30px;
 }
 
+.part {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    align-items: center;
+    width: 100%;
+    margin-top: 30px;
+    margin-left: -250px;
+}
+
+.partt {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    align-items: center;
+    width: 100%;
+    margin-top: 30px;
+    margin-left: 170px;
+}
+
+.dates {
+    margin-left: -400px;
+    margin-bottom: 20px;
+}
+
 .parts {
     display: flex;
     flex-direction: row;
     justify-content: space-around;
+    align-items: center;
     width: 100%;
-    margin-top: 90px;
-    margin-left: 90px;
+    margin-top: 30px;
+    margin-left: 30px;
 }
 
 .directions h1 {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 500;
+    text-align: center;
 }
 
 .report,
