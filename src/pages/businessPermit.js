@@ -13,6 +13,8 @@ import logo from "../assets/logo.png";
 import { Table, Pagination } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 import jsPDF from "jspdf";
+import { format } from "date-fns";
+import { enUS } from "date-fns/locale";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -79,7 +81,7 @@ function App() {
     const columns = [
       {
         Header: "Name of Applicant",
-        accessor: "userName",
+        accessor: (row) => `${row.userName} ${row.userLastName}`,
       },
       {
         Header: "Residency",
@@ -95,22 +97,27 @@ function App() {
       },
       {
         Header: "Date of Application",
-        accessor: "createdAt",
+        accessor: (row) => {
+          const date = row.createdAt.toDate ? row.createdAt.toDate() : row.createdAt;
+          return date ? format(date, "MMMM d, yyyy", { locale: enUS }) : "";
+      },
+      Cell: ({ value }) => {
+          if (value) {
+              return value;
+          } else {
+              return "Invalid Date";
+          }
+      },
       },
       {
         Header: "Status",
         accessor: "status",
       },
-      {
-        Header: "Actions",
-        accessor: "actions",
-        Cell: ({ row }) => <button onClick={() => openModal(row)}>View</button>,
-      },
       // ... other columns ...
     ];
 
     // Create a PDF document
-    const pdfDoc = new jsPDF();
+    const pdfDoc = new jsPDF({ orientation: "landscape" });
 
     // Set font size and style
     pdfDoc.setFontSize(12);
@@ -118,38 +125,61 @@ function App() {
 
     // Add header row to PDF as a table
     pdfDoc.autoTable({
-      head: [columns.map((column) => column.Header)],
-      startY: 10,
-      styles: { fontSize: 12, cellPadding: 2 },
+        head: [columns.map((column) => column.Header)],
+        startY: 10,
+        styles: { fontSize: 12, cellPadding: 2 },
     });
 
     // Add data rows to PDF as a table
     const dataRows = data.map((item) =>
-      columns.map((column) => {
-        // Format date as a string if it exists
-        if (column.accessor === "date" && item[column.accessor]) {
-          return item[column.accessor].toDate().toLocaleDateString() || "";
-        }
-        return item[column.accessor] || "";
-      })
+        columns.map((column) => {
+            // Use accessor function if provided
+            const cellValue = typeof column.accessor === 'function' ? column.accessor(item) : item[column.accessor];
+
+            // Format date as a string if it exists
+            if (Array.isArray(cellValue)) {
+                return cellValue.join("-");
+            } else if (column.accessor === "createdAt" && cellValue) {
+                return cellValue.toDate().toLocaleDateString() || "";
+            }
+
+            // Return an empty string if the cell value is undefined or null
+            return cellValue !== undefined && cellValue !== null ? cellValue : "";
+        })
     );
 
+    // Calculate the maximum width for each column based on content
+    const columnWidths = columns.map((column, columnIndex) => {
+        const headerWidth = pdfDoc.getStringUnitWidth(column.Header) * 12 / pdfDoc.internal.scaleFactor;
+        const maxDataWidth = Math.max(...dataRows.map((row) => pdfDoc.getStringUnitWidth(String(row[columnIndex])) * 12 / pdfDoc.internal.scaleFactor));
+        const totalWidth = Math.max(headerWidth, maxDataWidth) + 12; // Calculate total width with padding
+
+        return totalWidth;
+    });
+
+    // Add data rows to PDF as a table with calculated column widths
     pdfDoc.autoTable({
-      body: dataRows,
-      startY: pdfDoc.autoTable.previous.finalY + 2,
-      styles: { fontSize: 10, cellPadding: 2 },
+        body: dataRows,
+        startY: pdfDoc.autoTable.previous.finalY + 2,
+        styles: { fontSize: 9, cellPadding: 2 },
+        columnStyles: {
+            // Apply calculated column widths
+            ...columns.reduce((styles, column, index) => {
+                styles[index] = { cellWidth: columnWidths[index] };
+                return styles;
+            }, {}),
+        },
     });
 
     // Save the PDF
-    pdfDoc.save("Users_Records.pdf");
-  };
-
+    pdfDoc.save("Business_Permit_Records.pdf");
+};
   // Function to export data as CSV
   const exportDataAsCSV = () => {
     const columns = [
       {
         Header: "Name of Applicant",
-        accessor: "userName",
+        accessor: (row) => `${row.userName} ${row.userLastName}`,
       },
       {
         Header: "Residency",
@@ -165,28 +195,21 @@ function App() {
       },
       {
         Header: "Date of Application",
-        accessor: "createdAt",
-        Cell: ({ value }) => {
+        accessor: (row) => {
+          const date = row.createdAt.toDate ? row.createdAt.toDate() : row.createdAt;
+          return date ? format(date, "MMMM d, yyyy", { locale: enUS }) : "";
+      },
+      Cell: ({ value }) => {
           if (value) {
-            const date = value.toDate ? value.toDate() : value; // Check if toDate() is available
-            if (isValidDate(date)) {
-              return date.toLocaleDateString();
-            } else {
-              return "Invalid Date";
-            }
+              return value;
           } else {
-            return "N/A"; // Handle the case where value is null or undefined
+              return "Invalid Date";
           }
-        },
+      },
       },
       {
         Header: "Status",
         accessor: "status",
-      },
-      {
-        Header: "Actions",
-        accessor: "actions",
-        Cell: ({ row }) => <button onClick={() => openModal(row)}>View</button>,
       },
       // ... other columns ...
     ];
@@ -229,7 +252,7 @@ function App() {
     // Create a download link
     const link = document.createElement("a");
     link.href = window.URL.createObjectURL(blob);
-    link.download = "Users_Records.csv";
+    link.download = "Business_Permit_Records.csv";
 
     // Append the link to the document
     document.body.appendChild(link);
@@ -281,7 +304,7 @@ function App() {
       },
       {
         Header: "Name of Applicant",
-        accessor: "userName",
+        accessor: (row) => `${row.userName} ${row.userLastName}`,
       },
       {
         Header: "Residency",
@@ -319,53 +342,57 @@ function App() {
     []
   );
 
-  const filteredData = data.filter((item) => {
-    const getMonthName = (monthNumber) => {
-      const monthNames = [
-        "January",
-        "February",
-        "March",
-        "April",
-        "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December",
-      ];
-      return monthNames[monthNumber - 1];
-    };
+  const showAllData = true; // Set this to true to see all data without filtering
 
-    return (
-      item.rname &&
-      item.rname.toLowerCase().includes(searchQuery.toLowerCase()) &&
-      (selectedYearFilter !== ""
-        ? item.createdAt &&
-          item.createdAt.toDate &&
-          typeof item.createdAt.toDate === "function" &&
-          item.createdAt.toDate().getFullYear().toString() ===
-            selectedYearFilter
-        : true) &&
-      (selectedMonthFilter !== ""
-        ? item.createdAt &&
-          item.createdAt.toDate &&
-          typeof item.createdAt.toDate === "function" &&
-          getMonthName(item.createdAt.toDate().getMonth() + 1).toLowerCase() ===
-            selectedMonthFilter.toLowerCase()
-        : true) &&
-      (selectedDayFilter !== ""
-        ? item.createdAt &&
-          item.createdAt.toDate &&
-          typeof item.createdAt.toDate === "function" &&
-          item.createdAt.toDate().getDate().toString() === selectedDayFilter
-        : true) &&
-      (selectedStatusFilter !== ""
-        ? item.status.toLowerCase().includes(selectedStatusFilter.toLowerCase())
-        : true)
-    );
-  });
+  const filteredData = showAllData
+    ? data
+    : data.filter((item) => {
+        const getMonthName = (monthNumber) => {
+          const monthNames = [
+            "January",
+            "February",
+            "March",
+            "April",
+            "May",
+            "June",
+            "July",
+            "August",
+            "September",
+            "October",
+            "November",
+            "December",
+          ];
+          return monthNames[monthNumber - 1];
+        };
+
+        return (
+          item.rname &&
+          item.rname.toLowerCase().includes(searchQuery.toLowerCase()) &&
+          (selectedYearFilter !== ""
+            ? item.createdAt &&
+              item.createdAt.toDate &&
+              typeof item.createdAt.toDate === "function" &&
+              item.createdAt.toDate().getFullYear().toString() ===
+                selectedYearFilter
+            : true) &&
+          (selectedMonthFilter !== ""
+            ? item.createdAt &&
+              item.createdAt.toDate &&
+              typeof item.createdAt.toDate === "function" &&
+              getMonthName(item.createdAt.toDate().getMonth() + 1).toLowerCase() ===
+                selectedMonthFilter.toLowerCase()
+            : true) &&
+          (selectedDayFilter !== ""
+            ? item.createdAt &&
+              item.createdAt.toDate &&
+              typeof item.createdAt.toDate === "function" &&
+              item.createdAt.toDate().getDate().toString() === selectedDayFilter
+            : true) &&
+          (selectedStatusFilter !== ""
+            ? item.status.toLowerCase().includes(selectedStatusFilter.toLowerCase())
+            : true)
+        );
+      });
 
   // React Table configuration
   const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } =

@@ -8,8 +8,6 @@ import {
   getDocs,
   Timestamp,
 } from "firebase/firestore";
-import { Link } from "react-router-dom/cjs/react-router-dom.min";
-import { Bar, PieChart, Pie, Cell, Tooltip } from "recharts";
 import Chart from "react-apexcharts";
 import ReactApexChart from "react-apexcharts";
 import "apexcharts";
@@ -55,6 +53,17 @@ function getServiceTypeCollection(serviceType) {
   }
 }
 
+const serviceCollections = [
+  "birth_reg",
+  "marriageCert",
+  "deathCert",
+  "job",
+  "businessPermit",
+  "appointments",
+  "marriage_reg",
+  "death_reg",
+];
+
 function App() {
   const [dayTransactions, setDayTransactions] = useState(0);
   const [weekTransactions, setWeekTransactions] = useState(0);
@@ -82,8 +91,18 @@ function App() {
   const [yearFilter, setYearFilter] = useState("");
   const [serviceFilter, setServiceFilter] = useState("");
 
+  const [recordCounts, setRecordCounts] = useState(null);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [noRecordsMessage, setNoRecordsMessage] = useState("");
+
   const { user } = useAuth();
   const [userEmail, setUserEmail] = useState("");
+
+  const [selectedFilter, setSelectedFilter] = useState({
+    barangay: null,
+    year: new Date().getFullYear(),
+    serviceType: null,
+  });
 
   useEffect(() => {
     const fetchUserEmail = () => {
@@ -100,7 +119,6 @@ function App() {
 
   useEffect(() => {
     fetchMonthlyData();
-    fetchBarangayData();
     fetchYearlyDataForBarangay();
     fetchMonthlyDataForSelectedBarangay();
     fetchUserCount();
@@ -113,10 +131,9 @@ function App() {
 
     fetchServiceTypeData();
 
-
     fetchServiceData(selectedDate);
     fetchDailyData(startDate, endDate);
-  }, [startDate, endDate, selectedServiceType, selectedBarangay]);
+  }, [startDate, endDate, selectedServiceType, selectedBarangay, selectedYear, selectedFilter, selectedMonth]);
 
   const fetchUserCount = async () => {
     try {
@@ -285,17 +302,6 @@ function App() {
     } catch (error) {
       console.error("Error fetching monthly data:", error);
       return [];
-    }
-  };
-
-  const fetchBarangayData = async () => {
-    try {
-      const barangayCollection = collection(db, "barangays");
-      const barangaySnapshot = await getDocs(barangayCollection);
-      const barangays = barangaySnapshot.docs.map((doc) => doc.data());
-      setBarangayData(barangays);
-    } catch (error) {
-      console.error("Error fetching barangay data:", error);
     }
   };
 
@@ -736,19 +742,6 @@ function App() {
     return serviceTypes[index];
   };
 
-  const handleBarangayClick = (event, chartContext, config) => {
-    // Check if a bar is clicked and config is defined
-    if (
-      config &&
-      config.seriesIndex === 0 &&
-      config.dataPointIndex !== undefined
-    ) {
-      const clickedBarangay =
-        yearlyDataForBarangay[config.dataPointIndex].barangay;
-      handleBarangaySelection(clickedBarangay);
-    }
-  };
-
   const findMostAndLeastAcquiredServices = () => {
     // Check if monthlyData is defined, if not return default values
     if (!monthlyData || monthlyData.length === 0) {
@@ -942,6 +935,24 @@ function App() {
           where("createdAt", "<", Timestamp.fromDate(new Date(`${year}-12-31`)))
         ),
         query(
+          collection(db, "marriage_reg"),
+          where(
+            "createdAt",
+            ">",
+            Timestamp.fromDate(new Date(`${year}-01-01`))
+          ),
+          where("createdAt", "<", Timestamp.fromDate(new Date(`${year}-12-31`)))
+        ),
+        query(
+          collection(db, "death_reg"),
+          where(
+            "createdAt",
+            ">",
+            Timestamp.fromDate(new Date(`${year}-01-01`))
+          ),
+          where("createdAt", "<", Timestamp.fromDate(new Date(`${year}-12-31`)))
+        ),
+        query(
           collection(db, "deathCert"),
           where(
             "createdAt",
@@ -1012,6 +1023,8 @@ function App() {
           onProcess: countByStatus("On Process"),
           completed: countByStatus("Completed"),
           rejected: countByStatus("Rejected"),
+          approved: countByStatus("Approved"),
+          disapproved: countByStatus("Disapproved"),
         };
 
         console.log(`${monthName} Status Count:`, statusCount);
@@ -1027,6 +1040,103 @@ function App() {
       return [];
     }
   };
+
+  const fetchRecordCounts = async () => {
+    try {
+      const currentYear = new Date().getFullYear();
+      const startOfMonth = new Date(`${currentYear}-${selectedMonth}-01`);
+      const endOfMonth = new Date(
+        currentYear,
+        selectedMonth,
+        0,
+        23,
+        59,
+        59,
+        999
+      );
+
+      const appointmentsCollection = collection(db, "appointments");
+      const birthRegCollection = collection(db, "birth_reg");
+      const marriageCertCollection = collection(db, "marriageCert");
+      const deathCertCollection = collection(db, "deathCert");
+      const jobCollection = collection(db, "job");
+      const businessPermitCollection = collection(db, "businessPermit");
+
+      const [
+        appointmentsSnapshot,
+        birthRegSnapshot,
+        marriageCertSnapshot,
+        deathCertSnapshot,
+        jobSnapshot,
+        businessPermitSnapshot,
+      ] = await Promise.all([
+        getDocs(
+          query(
+            appointmentsCollection,
+            where("createdAt", ">=", startOfMonth),
+            where("createdAt", "<=", endOfMonth)
+          )
+        ),
+        getDocs(
+          query(
+            birthRegCollection,
+            where("createdAt", ">=", startOfMonth),
+            where("createdAt", "<=", endOfMonth)
+          )
+        ),
+        getDocs(
+          query(
+            marriageCertCollection,
+            where("createdAt", ">=", startOfMonth),
+            where("createdAt", "<=", endOfMonth)
+          )
+        ),
+        getDocs(
+          query(
+            deathCertCollection,
+            where("createdAt", ">=", startOfMonth),
+            where("createdAt", "<=", endOfMonth)
+          )
+        ),
+        getDocs(
+          query(
+            jobCollection,
+            where("createdAt", ">=", startOfMonth),
+            where("createdAt", "<=", endOfMonth)
+          )
+        ),
+        getDocs(
+          query(
+            businessPermitCollection,
+            where("createdAt", ">=", startOfMonth),
+            where("createdAt", "<=", endOfMonth)
+          )
+        ),
+      ]);
+
+      const counts = {
+        appointments: appointmentsSnapshot.size,
+        birthRegistration: birthRegSnapshot.size,
+        marriageCertificate: marriageCertSnapshot.size,
+        deathCertificate: deathCertSnapshot.size,
+        jobApplication: jobSnapshot.size,
+        businessPermit: businessPermitSnapshot.size,
+      };
+
+      console.log("Record Counts:", counts);
+
+      setRecordCounts(counts);
+      setNoRecordsMessage(""); // Reset the message when records are fetched
+    } catch (error) {
+      console.error("Error fetching record counts from Firebase:", error);
+      setNoRecordsMessage("No records found for this month."); // Set the message when an error occurs or no records are found
+      // Handle error here
+    }
+  };
+
+  useEffect(() => {
+    fetchRecordCounts();
+  }, [selectedMonth]);
 
   return (
     <div>
@@ -1046,161 +1156,439 @@ function App() {
           </div>
         </div>
 
-        <div className="line-graph">
-          <div className="date">
-            <div className="datepicker">
-              <label>Start Date:</label>
-              <DatePicker
-                selected={startDate}
-                onChange={handleStartDateChange}
-                dateFormat="MMMM d, yyyy"
-              />
+        <div className="parts">
+          <div className="line-graph">
+            <div className="date">
+              <div className="datepicker">
+                <label>Start Date:</label>
+                <DatePicker
+                  selected={startDate}
+                  onChange={handleStartDateChange}
+                  dateFormat="MMMM d, yyyy"
+                />
+              </div>
+              <div className="datepicker">
+                <label>End Date:</label>
+                <DatePicker
+                  selected={endDate}
+                  onChange={handleEndDateChange}
+                  dateFormat="MMMM d, yyyy"
+                />
+              </div>
             </div>
-            <div className="datepicker">
-              <label>End Date:</label>
-              <DatePicker
-                selected={endDate}
-                onChange={handleEndDateChange}
-                dateFormat="MMMM d, yyyy"
-              />
-            </div>
-          </div>
-          <div>
-            <Chart
-              options={{
-                chart: {
-                  type: "line",
-                },
-                title: {
-                  text: "TOTAL TRANSACTIONS PER SERVICE",
-                  align: "center",
-                  style: {
-                    fontSize: "17px",
-                    fontWeight: "bold",
-                    marginTop: "40px",
+            <div>
+              <Chart
+                options={{
+                  chart: {
+                    type: "line",
                   },
-                },
-                xaxis: {
-                  categories: Array.from(
+                  title: {
+                    text: "TOTAL TRANSACTIONS PER SERVICE",
+                    align: "center",
+                    style: {
+                      fontSize: "17px",
+                      fontWeight: "bold",
+                      marginTop: "40px",
+                    },
+                  },
+                  xaxis: {
+                    categories: Array.from(
+                      {
+                        length: calculateDateDifference(startDate, endDate) + 1,
+                      },
+                      (_, index) => {
+                        const day = new Date(startDate);
+                        day.setDate(day.getDate() + index);
+                        return day.toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        });
+                      }
+                    ),
+                  },
+                }}
+                series={dailyData.map((serviceData) => ({
+                  name: serviceData.serviceType,
+                  data: Array.from(
                     { length: calculateDateDifference(startDate, endDate) + 1 },
                     (_, index) => {
-                      const day = new Date(startDate);
-                      day.setDate(day.getDate() + index);
-                      return day.toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                      });
+                      const currentDate = new Date(startDate);
+                      currentDate.setDate(currentDate.getDate() + index);
+                      const dataPoint = serviceData.dataPoints.find(
+                        (item) =>
+                          item.date.getDate() === currentDate.getDate() &&
+                          item.date.getMonth() === currentDate.getMonth() &&
+                          item.date.getFullYear() === currentDate.getFullYear()
+                      );
+                      return dataPoint ? dataPoint.count : 0;
                     }
                   ),
-                },
-              }}
-              series={dailyData.map((serviceData) => ({
-                name: serviceData.serviceType,
-                data: Array.from(
-                  { length: calculateDateDifference(startDate, endDate) + 1 },
-                  (_, index) => {
-                    const currentDate = new Date(startDate);
-                    currentDate.setDate(currentDate.getDate() + index);
-                    const dataPoint = serviceData.dataPoints.find(
-                      (item) =>
-                        item.date.getDate() === currentDate.getDate() &&
-                        item.date.getMonth() === currentDate.getMonth() &&
-                        item.date.getFullYear() === currentDate.getFullYear()
-                    );
-                    return dataPoint ? dataPoint.count : 0;
-                  }
-                ),
-              }))}
-              type="line"
-              width={700}
-              height={400}
-            />
+                }))}
+                type="line"
+                width={1250}
+                height={550}
+              />
+            </div>
           </div>
         </div>
 
-        <div className="parts">
-          <div className="polar-area-chart">
-            <ReactApexChart
-              options={{
-                chart: {
-                  type: "polarArea",
-                },
-                title: {
-                  text: "MOST ACQUIRED SERVICE FOR THE MONTH OF " + currentMonthName.toUpperCase(),
-                  align: "center",
-                  style: {
-                    fontSize: "16px",
-                    fontWeight: "bold",
-                  },
-                },
-                labels: serviceTypeData.map((data) => data.name),
-                fill: {
-                  opacity: 0.8,
-                  colors: [
-                    "#4285F4",
-                    "#34A853",
-                    "#FBBC05",
-                    "#EA4335",
-                    "#FF7252",
-                    "#4B07C0",
-                    "#008A63",
-                    "#AD0040",
-                  ],
-                },
-                stroke: {
-                  width: 1,
-                  colors: undefined,
-                },
-                yaxis: {
-                  show: false,
-                },
-                legend: {
-                  position: "bottom",
-                },
-                plotOptions: {
-                  polarArea: {
-                    rings: {
-                      strokeWidth: 1,
-                    },
-                    spokes: {
-                      strokeWidth: 1,
-                    },
-                  },
-                },
-                dataLabels: {
-                  enabled: true,
-                  formatter: function (val, opts) {
-                    return opts.w.globals.series[opts.seriesIndex];
-                  },
-                  background: {
-                    enabled: false,
-                  },
-                },
-              }}
-              series={serviceTypeData.map((data) => data.data)}
-              type="polarArea"
-              width={500}
-              height={400}
-            />
-          </div>
-          <div className="directions">
-            {/* Display the most and least acquired services */}
-            <h1>
-              The most acquired service this {currentMonthName} is{" "}
-              {mostAcquiredService.name} <br/> with a total of{" "}
-              {mostAcquiredService.data} transactions or (
-              {mostAcquiredPercentage.toFixed(2)}%).
-            </h1>
-            <h1>
-              The least acquired service this {currentMonthName} is{" "}
-              {leastAcquiredService.name} <br/> with a total of{" "}
-              {leastAcquiredService.data} transactions or (
-              {leastAcquiredPercentage.toFixed(2)}%).
-            </h1>
-          </div>
+        <div className="partt">
+          {recordCounts && (
+            <div className="chart">
+              <div className="rows">
+                <div className="cols-4">
+                  <select
+                    value={selectedMonth}
+                    className="dates"
+                    onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                  >
+                    {Array.from({ length: 12 }, (_, i) => (
+                      <option key={i + 1} value={i + 1}>
+                        {new Date(2000, i, 1).toLocaleString("default", {
+                          month: "long",
+                        })}
+                      </option>
+                    ))}
+                  </select>
+                  {noRecordsMessage && <p>{noRecordsMessage}</p>}
+                  <Chart
+                    options={{
+                      chart: {
+                        id: "record-bar",
+                      },
+                      title: {
+                        text: "NO. OF APPLICATIONS PER SERVICES",
+                        align: "center",
+                        style: {
+                          fontSize: "16px",
+                          fontWeight: "bold",
+                        },
+                      },
+                    }}
+                    series={[
+                      {
+                        name: "Appointments",
+                        data: [
+                          {
+                            x: "Appointments",
+                            y: recordCounts.appointments,
+                            color: "#8884d8",
+                          },
+                        ],
+                      },
+                      {
+                        name: "Birth Registration",
+                        data: [
+                          {
+                            x: "Birth Registration",
+                            y: recordCounts.birthRegistration,
+                            color: "#82ca9d",
+                          },
+                        ],
+                      },
+                      {
+                        name: "Marriage Certificate",
+                        data: [
+                          {
+                            x: "Marriage Certificate",
+                            y: recordCounts.marriageCertificate,
+                            color: "#ffc658",
+                          },
+                        ],
+                      },
+                      {
+                        name: "Death Certificate",
+                        data: [
+                          {
+                            x: "Death Certificate",
+                            y: recordCounts.deathCertificate,
+                            color: "#ff7300",
+                          },
+                        ],
+                      },
+                      {
+                        name: "Job Application",
+                        data: [
+                          {
+                            x: "Job Application",
+                            y: recordCounts.jobApplication,
+                            color: "#0088fe",
+                          },
+                        ],
+                      },
+                      {
+                        name: "Business Permit",
+                        data: [
+                          {
+                            x: "Business Permit",
+                            y: recordCounts.businessPermit,
+                            color: "#d73a4a",
+                          },
+                        ],
+                      },
+                    ]}
+                    type="bar"
+                    width={700}
+                    height={500}
+                  />
+                </div>
+                <div>
+                  <div className="directions">
+                  <h5
+                    style={{
+                      textAlign: "center",
+                      marginTop: "20px",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    Figure 2.
+                  </h5>
+                    <h1>
+                      The number of appointments for{" "}
+                      {new Date(2000, selectedMonth - 1, 1).toLocaleString(
+                        "default",
+                        {
+                          month: "long",
+                        }
+                      )}{" "}
+                      is {recordCounts.appointments} applications, from all of
+                      the{" "}
+                      {Object.values(recordCounts).reduce(
+                        (acc, count) => acc + count,
+                        0
+                      )}{" "}
+                      transactions with a corresponding percentage of{" "}
+                      {(
+                        (recordCounts.appointments /
+                          Object.values(recordCounts).reduce(
+                            (acc, count) => acc + count,
+                            0
+                          )) *
+                        100
+                      ).toFixed(2)}
+                      %.
+                    </h1>
+                    <h1>
+                      The number of Birth Registration for{" "}
+                      {new Date(2000, selectedMonth - 1, 1).toLocaleString(
+                        "default",
+                        {
+                          month: "long",
+                        }
+                      )}{" "}
+                      is {recordCounts.birthRegistration} registrations, from
+                      all of the{" "}
+                      {Object.values(recordCounts).reduce(
+                        (acc, count) => acc + count,
+                        0
+                      )}{" "}
+                      transactions with a corresponding percentage of{" "}
+                      {(
+                        (recordCounts.birthRegistration /
+                          Object.values(recordCounts).reduce(
+                            (acc, count) => acc + count,
+                            0
+                          )) *
+                        100
+                      ).toFixed(2)}
+                      %.
+                    </h1>
+                    <h1>
+                      The number of Marriage Certificate for{" "} {new Date(2000, selectedMonth - 1, 1).toLocaleString(
+                        "default",
+                        {
+                          month: "long",
+                        }
+                      )}{" "} is {recordCounts.marriageCertificate} registrations, from
+                      all of the{" "} {Object.values(recordCounts).reduce(
+                        (acc, count) => acc + count,
+                        0
+                      )}{" "} transactions with a corresponding percentage of{" "}
+                      {(
+                        (recordCounts.marriageCertificate /
+                          Object.values(recordCounts).reduce(
+                            (acc, count) => acc + count,
+                            0
+                          )) *
+                        100
+                      ).toFixed(2)}
+                      %.
+                    </h1>
+                    <h1>
+                      The number of Death Registration for{" "}
+                      {new Date(2000, selectedMonth - 1, 1).toLocaleString(
+                        "default",
+                        {
+                          month: "long",
+                        }
+                      )}{" "}
+                      is {recordCounts.deathCertificate} registrations, from all
+                      of the{" "}
+                      {Object.values(recordCounts).reduce(
+                        (acc, count) => acc + count,
+                        0
+                      )}{" "}
+                      transactions with a corresponding percentage of{" "}
+                      {(
+                        (recordCounts.deathCertificate /
+                          Object.values(recordCounts).reduce(
+                            (acc, count) => acc + count,
+                            0
+                          )) *
+                        100
+                      ).toFixed(2)}
+                      %.
+                    </h1>
+                    <h1>
+                      The number of Job applications for{" "}
+                      {new Date(2000, selectedMonth - 1, 1).toLocaleString(
+                        "default",
+                        {
+                          month: "long",
+                        }
+                      )}{" "}
+                      is {recordCounts.jobApplication} applications, from all of
+                      the{" "}
+                      {Object.values(recordCounts).reduce(
+                        (acc, count) => acc + count,
+                        0
+                      )}{" "}
+                      transactions with a corresponding percentage of{" "}
+                      {(
+                        (recordCounts.jobApplication /
+                          Object.values(recordCounts).reduce(
+                            (acc, count) => acc + count,
+                            0
+                          )) *
+                        100
+                      ).toFixed(2)}
+                      %.
+                    </h1>
+                    <h1>
+                      The number of Business Permit for{" "}
+                      {new Date(2000, selectedMonth - 1, 1).toLocaleString(
+                        "default",
+                        {
+                          month: "long",
+                        }
+                      )}{" "}
+                      is {recordCounts.businessPermit} registrations, from all
+                      of the{" "}
+                      {Object.values(recordCounts).reduce(
+                        (acc, count) => acc + count,
+                        0
+                      )}{" "}
+                      transactions with a corresponding percentage of{" "}
+                      {(
+                        (recordCounts.businessPermit /
+                          Object.values(recordCounts).reduce(
+                            (acc, count) => acc + count,
+                            0
+                          )) *
+                        100
+                      ).toFixed(2)}
+                      %.
+                    </h1>
+                  </div>
+                </div>
+              </div>
+
+              <div className="part">
+                <div className="polar-area-chart">
+                  <ReactApexChart
+                    options={{
+                      chart: {
+                        type: "polarArea",
+                      },
+                      title: {
+                        text:
+                          "MOST ACQUIRED SERVICE FOR THE MONTH OF " +
+                          currentMonthName.toUpperCase(),
+                        align: "center",
+                        style: {
+                          fontSize: "16px",
+                          fontWeight: "bold",
+                        },
+                      },
+                      labels: serviceTypeData.map((data) => data.name),
+                      fill: {
+                        opacity: 0.8,
+                        colors: [
+                          "#4285F4",
+                          "#34A853",
+                          "#FBBC05",
+                          "#EA4335",
+                          "#FF7252",
+                          "#4B07C0",
+                          "#008A63",
+                          "#AD0040",
+                        ],
+                      },
+                      stroke: {
+                        width: 1,
+                        colors: undefined,
+                      },
+                      yaxis: {
+                        show: false,
+                      },
+                      legend: {
+                        position: "bottom",
+                      },
+                      plotOptions: {
+                        polarArea: {
+                          rings: {
+                            strokeWidth: 1,
+                          },
+                          spokes: {
+                            strokeWidth: 1,
+                          },
+                        },
+                      },
+                      dataLabels: {
+                        enabled: true,
+                        formatter: function (val, opts) {
+                          return opts.w.globals.series[opts.seriesIndex];
+                        },
+                        background: {
+                          enabled: false,
+                        },
+                      },
+                    }}
+                    series={serviceTypeData.map((data) => data.data)}
+                    type="polarArea"
+                    width={700}
+                    height={500}
+                  />
+                </div>
+                <div className="directions">
+                  <h5
+                    style={{
+                      textAlign: "center",
+                      marginTop: "20px",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    Figure 3.
+                  </h5>
+                  <h1>
+                    The most acquired service for this month of{" "}
+                    {currentMonthName} is {mostAcquiredService.name} <br /> with
+                    a total of {mostAcquiredService.data} transactions or (
+                    {mostAcquiredPercentage.toFixed(2)}%).
+                  </h1>
+                  <h1>
+                    The least acquired service for this month of{" "}
+                    {currentMonthName} is {leastAcquiredService.name} <br />{" "}
+                    with a total of {leastAcquiredService.data} transactions or
+                    ({leastAcquiredPercentage.toFixed(2)}%).
+                  </h1>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
-        <div className="yearly-barangay-chart" onClick={handleBarangayClick}>
+        <div className="yearly-barangay-chart">
           <ReactApexChart
             options={{
               chart: {
@@ -1241,9 +1629,66 @@ function App() {
               },
             ]}
             type="bar"
-            width={1000}
-            height={400}
+            width={700}
+            height={600}
           />
+          <div className="filterss">
+          <label>Year:</label>
+          <select
+            value={selectedFilter.year}
+            onChange={(e) => handleYearChange(e.target.value)}
+          >
+            {/* Add options for years */}
+            {Array.from(
+              { length: 10 },
+              (_, i) => new Date().getFullYear() - i
+            ).map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="yearly-barangay-chart">
+          <ReactApexChart
+            options={{
+              chart: {
+                type: "bar",
+                height: 400,
+              },
+              plotOptions: {
+                bar: {
+                  horizontal: false,
+                  stacked: true,
+                },
+              },
+              title: {
+                text: "Total Transactions per Barangays",
+                align: "center",
+                style: {
+                  fontSize: "16px",
+                  fontWeight: "bold",
+                },
+              },
+              xaxis: {
+                type: "category",
+                categories: yearlyDataForBarangay.map((data) => data.barangay),
+                labels: {
+                  show: true,
+                  rotate: -45,
+                },
+              },
+            }}
+            series={serviceCollections.map((service) => ({
+              name: service,
+              data: yearlyDataForBarangay.map((data) => data[service] || 0),
+            }))}
+            type="bar"
+            width={700}
+            height={500}
+          />
+        </div>
         </div>
 
         <div className="analytics">
@@ -1289,10 +1734,18 @@ function App() {
                   name: "Rejected",
                   data: monthlyStatusData.map((data) => data.rejected),
                 },
+                {
+                  name: "Approved",
+                  data: monthlyStatusData.map((data) => data.approved),
+                },
+                {
+                  name: "Disapproved",
+                  data: monthlyStatusData.map((data) => data.disapproved),
+                },
               ]}
               type="bar"
-              width={1000}
-              height={400}
+              width={1300}
+              height={600}
             />
           </div>
         </div>

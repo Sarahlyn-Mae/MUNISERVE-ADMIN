@@ -9,6 +9,8 @@ import Sidebar from "../components/sidebar";
 import { FaSearch } from 'react-icons/fa'; // Import icons
 import { Link } from "react-router-dom/cjs/react-router-dom.min";
 import { onSnapshot } from "firebase/firestore";
+import { Table, Pagination } from "react-bootstrap";
+import jsPDF from "jspdf";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -36,6 +38,9 @@ function App() {
     const [selectedMonthFilter, setSelectedMonthFilter] = useState("");
     const [selectedDayFilter, setSelectedDayFilter] = useState("");
     const [selectedStatusFilter, setSelectedStatusFilter] = useState("");
+
+  const [selectedRow, setSelectedRow] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
     const storage = getStorage();
 
@@ -96,7 +101,252 @@ function App() {
             console.error("Error updating status: ", error);
         }
     };
+// PDF File
+const exportDataAsPDF = () => {
+    const columns = [
+      {
+        Header: "Name of Applicant",
+        accessor: "userName",
+      },
+      {
+        Header: "Residency",
+        accessor: "userBarangay",
+      },
+      {
+        Header: "Mobile No.",
+        accessor: "userContact",
+      },
+      {
+        Header: "Email",
+        accessor: "userEmail",
+      },
+      {
+        Header: "Date of Application",
+        accessor: "createdAt",
+      },
+      {
+        Header: "Status",
+        accessor: "status",
+      },
+      {
+        Header: "Actions",
+        accessor: "actions",
+        Cell: ({ row }) => <button onClick={() => openModal(row)}>View</button>,
+      },
+      // ... other columns ...
+    ];
 
+    // Create a PDF document
+    const pdfDoc = new jsPDF();
+
+    // Set font size and style
+    pdfDoc.setFontSize(12);
+    pdfDoc.setFont("helvetica", "bold");
+
+    // Add header row to PDF as a table
+    pdfDoc.autoTable({
+      head: [columns.map((column) => column.Header)],
+      startY: 10,
+      styles: { fontSize: 12, cellPadding: 2 },
+    });
+
+    // Add data rows to PDF as a table
+    const dataRows = data.map((item) =>
+      columns.map((column) => {
+        // Format date as a string if it exists
+        if (column.accessor === "date" && item[column.accessor]) {
+          return item[column.accessor].toDate().toLocaleDateString() || "";
+        }
+        return item[column.accessor] || "";
+      })
+    );
+
+    pdfDoc.autoTable({
+      body: dataRows,
+      startY: pdfDoc.autoTable.previous.finalY + 2,
+      styles: { fontSize: 10, cellPadding: 2 },
+    });
+
+    // Save the PDF
+    pdfDoc.save("Users_Records.pdf");
+  };
+
+  // Function to export data as CSV
+  const exportDataAsCSV = () => {
+    const columns = [
+      {
+        Header: "Name of Applicant",
+        accessor: "userName",
+      },
+      {
+        Header: "Residency",
+        accessor: "userBarangay",
+      },
+      {
+        Header: "Mobile No.",
+        accessor: "userContact",
+      },
+      {
+        Header: "Email",
+        accessor: "userEmail",
+      },
+      {
+        Header: "Date of Application",
+        accessor: "createdAt",
+        Cell: ({ value }) => {
+          if (value) {
+            const date = value.toDate ? value.toDate() : value; // Check if toDate() is available
+            if (isValidDate(date)) {
+              return date.toLocaleDateString();
+            } else {
+              return "Invalid Date";
+            }
+          } else {
+            return "N/A"; // Handle the case where value is null or undefined
+          }
+        },
+      },
+      {
+        Header: "Status",
+        accessor: "status",
+      },
+      {
+        Header: "Actions",
+        accessor: "actions",
+        Cell: ({ row }) => <button onClick={() => openModal(row)}>View</button>,
+      },
+      // ... other columns ...
+    ];
+
+    // Create CSV header row based on column headers and widths
+    let csvContent =
+      columns.map((column) => `${column.Header || ""}`).join(",") + "\n";
+    csvContent +=
+      columns.map((column) => `${column.width || ""}`).join(",") + "\n";
+
+    // Add data rows to CSV
+    data.forEach((item) => {
+      const row =
+        columns
+          .map((column) => {
+            // Format date as a string if it exists
+            let cellContent = item[column.accessor] || "";
+
+            // Truncate cell content if it exceeds a certain length (adjust the length as needed)
+            const maxLength = column.width || 100; // Use column width as max length
+            if (cellContent.length > maxLength) {
+              cellContent = cellContent.substring(0, maxLength - 100) + "...";
+            }
+
+            if (column.accessor === "date" && item[column.accessor]) {
+              return `${
+                item[column.accessor].toDate().toLocaleDateString() || ""
+              }`;
+            }
+            return `${cellContent}`;
+          })
+          .join(",") + "\n";
+
+      csvContent += row;
+    });
+
+    // Create a Blob containing the CSV data
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
+
+    // Create a download link
+    const link = document.createElement("a");
+    link.href = window.URL.createObjectURL(blob);
+    link.download = "Users_Records.csv";
+
+    // Append the link to the document
+    document.body.appendChild(link);
+
+    // Trigger a click event on the link to initiate the download
+    link.click();
+
+    // Remove the link from the document
+    document.body.removeChild(link);
+  };
+
+  // Function to handle export based on type
+  const handleExport = (exportType) => {
+    if (exportType === "pdf") {
+      exportDataAsPDF();
+    } else if (exportType === "csv") {
+      exportDataAsCSV();
+    }
+    // Add more conditions for other export types if needed
+  };
+
+  const openModal = async (row) => {
+    setSelectedRow(row);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setSelectedRow(null);
+    setIsModalOpen(false);
+  };
+
+  function isValidDate(date) {
+    return date instanceof Date && !isNaN(date);
+  }
+
+  const formatTimestamp = (timestamp) => {
+    if (timestamp && timestamp.seconds) {
+      return new Date(timestamp.seconds * 1000).toLocaleDateString();
+    }
+    return "Invalid Date";
+  };
+
+  // Define table columns
+  const columns = React.useMemo(
+    () => [
+      {
+        Header: "No.", // Auto-numbering column
+        accessor: (row, index) => index + 1, // Calculate row number
+      },
+      {
+        Header: "Name of Applicant",
+        accessor: "userName",
+      },
+      {
+        Header: "Residency",
+        accessor: "userBarangay",
+      },
+      {
+        Header: "Mobile No.",
+        accessor: "userContact",
+      },
+      {
+        Header: "Email",
+        accessor: "userEmail",
+      },
+      {
+        Header: "Date of Application",
+        accessor: "createdAt",
+        Cell: ({ value }) => {
+          if (value) {
+            const date = value.toDate ? value.toDate() : value; // Check if toDate() is available
+            if (isValidDate(date)) {
+              return date.toLocaleDateString();
+            } else {
+              return "Invalid Date";
+            }
+          } else {
+            return "N/A"; // Handle the case where value is null or undefined
+          }
+        },
+      },
+      {
+        Header: "Status",
+        accessor: "status",
+      },
+    ],
+    []
+  );
+
+  
     const filteredData = data.filter((item) => {
         const getMonthName = (monthNumber) => {
             const monthNames = [
@@ -412,5 +662,16 @@ function App() {
         </div>
     );
 }
+
+const DropdownButton = ({ handleExport }) => (
+    <div className="dropdown">
+      <button className="dropbtn">Export File</button>
+      <div className="dropdown-content">
+        <button onClick={() => handleExport("pdf")}>Export as PDF</button>
+        <button onClick={() => handleExport("csv")}>Export as CSV</button>
+        {/* Add more buttons for other export types */}
+      </div>
+    </div>
+);
 
 export default App;

@@ -11,6 +11,8 @@ import Sidebar from "../components/sidebar";
 import notification from "../assets/icons/Notification.png";
 import logo from "../assets/logo.png";
 import jsPDF from "jspdf";
+import { format } from "date-fns";
+import { enUS } from "date-fns/locale";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -87,72 +89,63 @@ function App() {
   // PDF File
   const exportDataAsPDF = () => {
     const columns = [
-      {
-        Header: "Child Name",
-        accessor: "childname",
-      },
-      {
-        Header: "Birth Date",
-        accessor: "c_birthdate",
-        Cell: ({ value }) => {
-          if (value) {
-            const date = value.toDate ? value.toDate() : value; // Check if toDate() is available
-            if (isValidDate(date)) {
-              return date.toLocaleDateString();
-            } else {
-              return "Invalid Date";
-            }
-          } else {
-            return "N/A"; // Handle the case where value is null or undefined
-          }
+        {
+            Header: "Child Name",
+            accessor: (row) => `${row.c_fname} ${row.c_lname}`,
         },
-      },
-      {
-        Header: "Residency",
-        accessor: "userBarangay",
-      },
-      {
-        Header: "Mobile No.",
-        accessor: "userContact",
-      },
-      {
-        Header: "Email",
-        accessor: "userEmail",
-      },
-      {
-        Header: "Name of Applicant",
-        accessor: "userName",
-      },
-      {
-        Header: "Date of Application",
-        accessor: "createdAt",
-        Cell: ({ value }) => {
-          if (value) {
-            const date = value.toDate ? value.toDate() : value; // Check if toDate() is available
-            if (isValidDate(date)) {
-              return date.toLocaleDateString();
-            } else {
-              return "Invalid Date";
-            }
-          } else {
-            return "N/A"; // Handle the case where value is null or undefined
-          }
+        {
+          Header: "Birth Date",
+          accessor: (row) => {
+              const date = row.birthdate.toDate ? row.birthdate.toDate() : row.birthdate;
+              return date ? format(date, "MMMM d, yyyy", { locale: enUS }) : "";
+          },
+          Cell: ({ value }) => {
+              if (value) {
+                  return value;
+              } else {
+                  return "Invalid Date";
+              }
+          },
+      },      
+        {
+            Header: "Residency",
+            accessor: "userBarangay",
         },
-      },
-      {
-        Header: "Status",
-        accessor: "status",
-      },
-      {
-        Header: "Actions",
-        accessor: "actions",
-        Cell: ({ row }) => <button onClick={() => openModal(row)}>View</button>,
-      },
-      // ... other columns ...
+        {
+            Header: "Mobile No.",
+            accessor: "userContact",
+        },
+        {
+            Header: "Email",
+            accessor: "userEmail",
+        },
+        {
+            Header: "User Name",
+            accessor: (row) => `${row.userName} ${row.userLastName}`,
+        },
+        {
+            Header: "Date of Application",
+            accessor: (row) => {
+                const date = row.createdAt.toDate ? row.createdAt.toDate() : row.createdAt;
+                return date ? [date.getFullYear(), date.getMonth() + 1, date.getDate()].map(String) : [];
+            },
+            Cell: ({ value }) => {
+                if (value && value.length === 3) {
+                    return value.join("-");
+                } else {
+                    return "Invalid Date";
+                }
+            },
+        },
+        {
+            Header: "Status",
+            accessor: "status",
+        },
+        // ... other columns ...
     ];
 
     // Create a PDF document
-    const pdfDoc = new jsPDF();
+    const pdfDoc = new jsPDF({ orientation: "landscape" });
 
     // Set font size and style
     pdfDoc.setFontSize(12);
@@ -160,54 +153,80 @@ function App() {
 
     // Add header row to PDF as a table
     pdfDoc.autoTable({
-      head: [columns.map((column) => column.Header)],
-      startY: 10,
-      styles: { fontSize: 12, cellPadding: 2 },
+        head: [columns.map((column) => column.Header)],
+        startY: 10,
+        styles: { fontSize: 12, cellPadding: 2 },
     });
 
     // Add data rows to PDF as a table
     const dataRows = data.map((item) =>
-      columns.map((column) => {
-        // Format date as a string if it exists
-        if (column.accessor === "date" && item[column.accessor]) {
-          return item[column.accessor].toDate().toLocaleDateString() || "";
-        }
-        return item[column.accessor] || "";
-      })
+        columns.map((column) => {
+            // Use accessor function if provided
+            const cellValue = typeof column.accessor === 'function' ? column.accessor(item) : item[column.accessor];
+
+            // Format date as a string if it exists
+            if (Array.isArray(cellValue)) {
+                return cellValue.join("-");
+            } else if (column.accessor === "createdAt" && cellValue) {
+                return cellValue.toDate().toLocaleDateString() || "";
+            }
+
+            // Return an empty string if the cell value is undefined or null
+            return cellValue !== undefined && cellValue !== null ? cellValue : "";
+        })
     );
 
+    // Calculate the maximum width for each column based on content
+    const columnWidths = columns.map((column, columnIndex) => {
+        const headerWidth = pdfDoc.getStringUnitWidth(column.Header) * 12 / pdfDoc.internal.scaleFactor;
+        const maxDataWidth = Math.max(...dataRows.map((row) => pdfDoc.getStringUnitWidth(String(row[columnIndex])) * 7 / pdfDoc.internal.scaleFactor));
+        const totalWidth = Math.max(headerWidth, maxDataWidth) + 8; // Calculate total width with padding
+
+        return totalWidth;
+    });
+
+    // Add data rows to PDF as a table with calculated column widths
     pdfDoc.autoTable({
-      body: dataRows,
-      startY: pdfDoc.autoTable.previous.finalY + 2,
-      styles: { fontSize: 10, cellPadding: 2 },
+        body: dataRows,
+        startY: pdfDoc.autoTable.previous.finalY + 2,
+        styles: { fontSize: 8, cellPadding: 2 },
+        columnStyles: {
+            // Apply calculated column widths
+            ...columns.reduce((styles, column, index) => {
+                styles[index] = { cellWidth: columnWidths[index] };
+                return styles;
+            }, {}),
+        },
     });
 
     // Save the PDF
-    pdfDoc.save("BirthReg_Records.pdf");
-  };
+    pdfDoc.save("Birth_Registration_Records.pdf");
+};
 
-  // Function to export data as CSV
-  const exportDataAsCSV = () => {
+  
+  
+// Function to export data as CSV
+const exportDataAsCSV = () => {
     const columns = [
       {
         Header: "Child Name",
-        accessor: "childname",
+        accessor: (row) => `${row.c_fname} ${row.c_mname} ${row.c_lname}`,
       },
       {
         Header: "Birth Date",
-        accessor: "c_birthdate",
+        accessor: "birthdate",
         Cell: ({ value }) => {
           if (value) {
-            const date = value.toDate ? value.toDate() : value; // Check if toDate() is available
-            if (isValidDate(date)) {
-              return date.toLocaleDateString();
-            } else {
-              return "Invalid Date";
-            }
+              const date = value.toDate ? value.toDate() : value;
+              if (isValidDate(date)) {
+                  return format(date, "MMMM d, yyyy");
+              } else {
+                  return "Invalid Date";
+              }
           } else {
-            return "N/A"; // Handle the case where value is null or undefined
+              return "N/A";
           }
-        },
+      },
       },
       {
         Header: "Residency",
@@ -222,83 +241,78 @@ function App() {
         accessor: "userEmail",
       },
       {
-        Header: "Name of Applicant",
-        accessor: "userName",
+        Header: "User Name",
+        accessor: (row) => `${row.userName} ${row.userLastName}`,
       },
       {
         Header: "Date of Application",
         accessor: "createdAt",
         Cell: ({ value }) => {
           if (value) {
-            const date = value.toDate ? value.toDate() : value; // Check if toDate() is available
-            if (isValidDate(date)) {
-              return date.toLocaleDateString();
-            } else {
-              return "Invalid Date";
-            }
+              const date = value.toDate ? value.toDate() : value;
+              if (isValidDate(date)) {
+                  return format(date, "MMMM d, yyyy");
+              } else {
+                  return "Invalid Date";
+              }
           } else {
-            return "N/A"; // Handle the case where value is null or undefined
+              return "N/A";
           }
-        },
+      },
       },
       {
         Header: "Status",
         accessor: "status",
       },
-      {
-        Header: "Actions",
-        accessor: "actions",
-        Cell: ({ row }) => <button onClick={() => openModal(row)}>View</button>,
-      },
       // ... other columns ...
     ];
-
-    // Create CSV header row based on column headers and widths
-    let csvContent =
-      columns.map((column) => `${column.Header || ""}`).join(",") + "\n";
-    csvContent +=
-      columns.map((column) => `${column.width || ""}`).join(",") + "\n";
-
+  
+    // Create CSV header row based on column headers
+    let csvContent = columns.map((column) => `${column.Header || ""}`).join(",") + "\n";
+  
     // Add data rows to CSV
     data.forEach((item) => {
-      const row =
-        columns
-          .map((column) => {
-            // Format date as a string if it exists
-            let cellContent = item[column.accessor] || "";
-
-            // Truncate cell content if it exceeds a certain length (adjust the length as needed)
-            const maxLength = column.width || 100; // Use column width as max length
-            if (cellContent.length > maxLength) {
-              cellContent = cellContent.substring(0, maxLength - 100) + "...";
-            }
-
-            if (column.accessor === "date" && item[column.accessor]) {
-              return `${
-                item[column.accessor].toDate().toLocaleDateString() || ""
-              }`;
-            }
-            return `${cellContent}`;
-          })
-          .join(",") + "\n";
-
+      const row = columns
+        .map((column) => {
+          // Use accessor function if provided
+          const cellValue = typeof column.accessor === 'function' ? column.accessor(item) : item[column.accessor];
+  
+          // Format date as a string if it exists
+          let cellContent = cellValue || "";
+  
+          // Convert date to string if it exists
+          if (column.accessor === "createdAt" && cellValue) {
+            const date = cellValue.toDate ? cellValue.toDate() : cellValue;
+            cellContent = isValidDate(date) ? date.toLocaleDateString() : "Invalid Date";
+          }
+  
+          // Truncate cell content if it exceeds a certain length (adjust the length as needed)
+          const maxLength = column.width || 100; // Use column width as max length
+          if (cellContent.length > maxLength) {
+            cellContent = cellContent.substring(0, maxLength - 100) + "...";
+          }
+  
+          return `${cellContent}`;
+        })
+        .join(",") + "\n";
+  
       csvContent += row;
     });
-
+  
     // Create a Blob containing the CSV data
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
-
+  
     // Create a download link
     const link = document.createElement("a");
     link.href = window.URL.createObjectURL(blob);
-    link.download = "BirthReg_Records.csv";
-
+    link.download = "Birth Registration_Records.csv";
+  
     // Append the link to the document
     document.body.appendChild(link);
-
+  
     // Trigger a click event on the link to initiate the download
     link.click();
-
+  
     // Remove the link from the document
     document.body.removeChild(link);
   };
@@ -323,9 +337,9 @@ function App() {
     setIsModalOpen(false);
   };
 
-  function isValidDate(date) {
+  const isValidDate = (date) => {
     return date instanceof Date && !isNaN(date);
-  }
+  };
 
   const formatTimestamp = (timestamp) => {
     if (timestamp && timestamp.seconds) {
@@ -343,24 +357,24 @@ function App() {
       },
       {
         Header: "Child Name",
-        accessor: "childname",
+        accessor: (row) => `${row.c_fname} ${row.c_mname} ${row.c_lname}`,
       },
       {
         Header: "Birth Date",
-        accessor: "c_birthdate",
+        accessor: "birthdate",
         Cell: ({ value }) => {
-          if (value) {
-            const date = value.toDate ? value.toDate() : value; // Check if toDate() is available
-            if (isValidDate(date)) {
-              return date.toLocaleDateString();
+            if (value) {
+                const date = value.toDate ? value.toDate() : value;
+                if (isValidDate(date)) {
+                    return format(date, "MMMM d, yyyy");
+                } else {
+                    return "Invalid Date";
+                }
             } else {
-              return "Invalid Date";
+                return "N/A";
             }
-          } else {
-            return "N/A"; // Handle the case where value is null or undefined
-          }
         },
-      },
+    },
       {
         Header: "Residency",
         accessor: "userBarangay",
@@ -381,18 +395,18 @@ function App() {
         Header: "Date of Application",
         accessor: "createdAt",
         Cell: ({ value }) => {
-          if (value) {
-            const date = value.toDate ? value.toDate() : value; // Check if toDate() is available
-            if (isValidDate(date)) {
-              return date.toLocaleDateString();
+            if (value) {
+                const date = value.toDate ? value.toDate() : value;
+                if (isValidDate(date)) {
+                    return format(date, "MMMM d, yyyy");
+                } else {
+                    return "Invalid Date";
+                }
             } else {
-              return "Invalid Date";
+                return "N/A";
             }
-          } else {
-            return "N/A"; // Handle the case where value is null or undefined
-          }
         },
-      },
+    },
       {
         Header: "Status",
         accessor: "status",

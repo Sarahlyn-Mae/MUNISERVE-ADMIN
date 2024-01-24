@@ -3,7 +3,6 @@ import { initializeApp } from "firebase/app";
 import { getFirestore, collection, getDocs } from "firebase/firestore";
 import { getStorage, ref, getDownloadURL } from "firebase/storage"; // Import Firebase Storage related functions
 import { useTable } from "react-table";
-import { saveAs } from "file-saver"; // Import file-saver for downloading
 import { FaSearch } from "react-icons/fa"; // Import icons
 import { Link } from "react-router-dom/cjs/react-router-dom.min";
 import "./transactions.css";
@@ -13,6 +12,8 @@ import logo from "../assets/logo.png";
 import { Table, Pagination } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 import jsPDF from "jspdf";
+import { format } from "date-fns";
+import { enUS } from "date-fns/locale";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -79,10 +80,10 @@ function App() {
     const columns = [
       {
         Header: "Name of Applicant",
-        accessor: "userName",
+        accessor: (row) => `${row.userName} ${row.userLastName}`,
       },
       {
-        Header: "Residency",
+        Header: "User Residency",
         accessor: "userBarangay",
       },
       {
@@ -90,66 +91,91 @@ function App() {
         accessor: "userContact",
       },
       {
-        Header: "Email",
+        Header: "User Email",
         accessor: "userEmail",
       },
       {
         Header: "Date of Application",
-        accessor: "createdAt",
+        accessor: (row) => {
+          const date = row.createdAt.toDate ? row.createdAt.toDate() : row.createdAt;
+          return date ? format(date, "MMMM d, yyyy", { locale: enUS }) : "";
       },
+      Cell: ({ value }) => {
+          if (value) {
+              return value;
+          } else {
+              return "Invalid Date";
+          }
+      },
+      },      
       {
         Header: "Status",
         accessor: "status",
       },
-      {
-        Header: "Actions",
-        accessor: "actions",
-        Cell: ({ row }) => <button onClick={() => openModal(row)}>View</button>,
-      },
       // ... other columns ...
     ];
 
-    // Create a PDF document
-    const pdfDoc = new jsPDF();
-
-    // Set font size and style
-    pdfDoc.setFontSize(12);
-    pdfDoc.setFont("helvetica", "bold");
-
-    // Add header row to PDF as a table
-    pdfDoc.autoTable({
-      head: [columns.map((column) => column.Header)],
-      startY: 10,
-      styles: { fontSize: 12, cellPadding: 2 },
-    });
-
-    // Add data rows to PDF as a table
-    const dataRows = data.map((item) =>
-      columns.map((column) => {
-        // Format date as a string if it exists
-        if (column.accessor === "date" && item[column.accessor]) {
-          return item[column.accessor].toDate().toLocaleDateString() || "";
-        }
-        return item[column.accessor] || "";
-      })
-    );
-
-    pdfDoc.autoTable({
-      body: dataRows,
-      startY: pdfDoc.autoTable.previous.finalY + 2,
-      styles: { fontSize: 10, cellPadding: 2 },
-    });
-
-    // Save the PDF
-    pdfDoc.save("Users_Records.pdf");
-  };
+   // Create a PDF document
+   const pdfDoc = new jsPDF({ orientation: "landscape" });
+  
+   // Set font size and style
+   pdfDoc.setFontSize(12);
+   pdfDoc.setFont("helvetica", "bold");
+ 
+   // Add header row to PDF as a table
+   pdfDoc.autoTable({
+     head: [columns.map((column) => column.Header)],
+     startY: 10,
+     styles: { fontSize: 11, cellPadding: 1 },
+   });
+ 
+   // Add data rows to PDF as a table
+   const dataRows = data.map((item) =>
+     columns.map((column) => {
+       // Use accessor function if provided
+       const cellValue = typeof column.accessor === 'function' ? column.accessor(item) : item[column.accessor];
+ 
+       // Format date as a string if it exists
+       if (column.accessor === "createdAt" && cellValue) {
+         return cellValue.toDate().toLocaleDateString() || "";
+       }
+       
+       // Return an empty string if the cell value is undefined or null
+       return cellValue !== undefined && cellValue !== null ? cellValue : "";
+     })
+   );
+ 
+   // Calculate the maximum width for each column based on content
+   const columnWidths = columns.map((column, columnIndex) => {
+     const headerWidth = pdfDoc.getStringUnitWidth(column.Header) * 12 / pdfDoc.internal.scaleFactor;
+     const maxDataWidth = Math.max(...dataRows.map((row) => pdfDoc.getStringUnitWidth(String(row[columnIndex])) * 12 / pdfDoc.internal.scaleFactor));
+     return Math.max(headerWidth, maxDataWidth) + 12; // Adding some padding
+   });
+ 
+   // Add data rows to PDF as a table with calculated column widths
+   pdfDoc.autoTable({
+     body: dataRows,
+     startY: pdfDoc.autoTable.previous.finalY + 2,
+     styles: { fontSize: 12, cellPadding: 0 },
+     columnStyles: {
+       // Apply calculated column widths
+       ...columns.reduce((styles, column, index) => {
+         styles[index] = { cellWidth: columnWidths[index] };
+         return styles;
+       }, {}),
+     },
+   });
+ 
+   // Save the PDF
+   pdfDoc.save("Marriage_Registration_Records.pdf");
+ };
 
   // Function to export data as CSV
   const exportDataAsCSV = () => {
     const columns = [
       {
         Header: "Name of Applicant",
-        accessor: "userName",
+        accessor: (row) => `${row.userName} ${row.userLastName}`,
       },
       {
         Header: "Residency",
@@ -182,11 +208,6 @@ function App() {
       {
         Header: "Status",
         accessor: "status",
-      },
-      {
-        Header: "Actions",
-        accessor: "actions",
-        Cell: ({ row }) => <button onClick={() => openModal(row)}>View</button>,
       },
       // ... other columns ...
     ];
@@ -281,7 +302,7 @@ function App() {
       },
       {
         Header: "Name of Applicant",
-        accessor: "userName",
+        accessor: (row) => `${row.userName} ${row.userLastName}`,
       },
       {
         Header: "Residency",
@@ -652,7 +673,6 @@ function App() {
             </div>
           </div>
         ) : (
-          // Render the table if the modal is not open
           <Table
             striped
             bordered
