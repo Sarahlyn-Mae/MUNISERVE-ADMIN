@@ -126,8 +126,8 @@ function App() {
     pdfDoc.save("Transaction_Records.pdf");
   };
 
-// Function to export data as CSV
-const exportDataAsCSV = () => {
+  // Function to export data as CSV
+  const exportDataAsCSV = () => {
     const columns = [
       {
         Header: "No.",
@@ -151,13 +151,13 @@ const exportDataAsCSV = () => {
       },
       // ... other columns ...
     ];
-  
+
     // Create CSV header row based on column headers and widths
     let csvContent =
-      columns.map((column) => `${column.Header || ''}`).join(",") + "\n";
+      columns.map((column) => `${column.Header || ""}`).join(",") + "\n";
     csvContent +=
-      columns.map((column) => `${column.width || ''}`).join(",") + "\n";
-  
+      columns.map((column) => `${column.width || ""}`).join(",") + "\n";
+
     // Add data rows to CSV
     data.forEach((item) => {
       const row =
@@ -165,41 +165,42 @@ const exportDataAsCSV = () => {
           .map((column) => {
             // Format date as a string if it exists
             let cellContent = item[column.accessor] || "";
-  
+
             // Truncate cell content if it exceeds a certain length (adjust the length as needed)
             const maxLength = column.width || 100; // Use column width as max length
             if (cellContent.length > maxLength) {
               cellContent = cellContent.substring(0, maxLength - 100) + "...";
             }
-  
+
             if (column.accessor === "date" && item[column.accessor]) {
-              return `${item[column.accessor].toDate().toLocaleDateString() || ''}`;
+              return `${
+                item[column.accessor].toDate().toLocaleDateString() || ""
+              }`;
             }
             return `${cellContent}`;
           })
           .join(",") + "\n";
-  
+
       csvContent += row;
     });
-  
+
     // Create a Blob containing the CSV data
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
-  
+
     // Create a download link
     const link = document.createElement("a");
     link.href = window.URL.createObjectURL(blob);
     link.download = "Transaction_Records.csv";
-  
+
     // Append the link to the document
     document.body.appendChild(link);
-  
+
     // Trigger a click event on the link to initiate the download
     link.click();
-  
+
     // Remove the link from the document
     document.body.removeChild(link);
   };
-  
 
   // Function to handle export based on type
   const handleExport = (exportType) => {
@@ -220,7 +221,7 @@ const exportDataAsCSV = () => {
       },
       {
         Header: "User Name",
-        accessor: "name",
+        accessor: (row) => `${row.userName} ${row.userLastName}`,
       },
       {
         Header: "Department",
@@ -250,7 +251,6 @@ const exportDataAsCSV = () => {
         Header: "Status",
         accessor: "status",
       },
-      // ... other columns ...
     ],
     []
   );
@@ -260,8 +260,17 @@ const exportDataAsCSV = () => {
   }, [localData]);
 
   // Filter data based on the search query
+  // Filter data based on the search query
   const filteredData = data.filter((item) => {
-    return item.name.toLowerCase().includes(searchQuery.toLowerCase());
+    return (
+      item.userName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.userLastName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.department?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.date &&
+        item.date.toDate().toLocaleDateString().includes(searchQuery)) ||
+      item.personnel?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.status?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
   });
 
   // Apply filters
@@ -295,18 +304,13 @@ const exportDataAsCSV = () => {
   };
 
   // React Table configuration
-    const {
-      getTableProps,
-      getTableBodyProps,
-      headerGroups,
-      rows,
-      prepareRow,
-    } = useTable({
+  const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } =
+    useTable({
       columns,
       data: applyFilters(),
     });
 
-    // Pagination
+  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -459,48 +463,65 @@ const exportDataAsCSV = () => {
               <option value="Disapproved">Disapproved</option>
               {/* Add more options as needed */}
             </select>
-            
-            <DropdownButton handleExport={handleExport} />
 
+            <DropdownButton handleExport={handleExport} />
           </div>
         </div>
 
         {/* Bootstrap Table */}
-        <Table striped bordered hover {...getTableProps()} className="custom-table">
+        <Table
+          striped
+          bordered
+          hover
+          {...getTableProps()}
+          className="custom-table"
+        >
           <thead>
             {headerGroups.map((headerGroup) => (
               <tr {...headerGroup.getHeaderGroupProps()}>
                 {headerGroup.headers.map((column) => (
-                  <th {...column.getHeaderProps()}>{column.render("Header")}</th>
+                  <th {...column.getHeaderProps()}>
+                    {column.render("Header")}
+                  </th>
                 ))}
               </tr>
             ))}
           </thead>
           <tbody {...getTableBodyProps()}>
-            {currentItems.map((row) => {
-              prepareRow(row);
-              return (
-                <tr {...row.getRowProps()}>
-                  {row.cells.map((cell) => (
-                    <td {...cell.getCellProps()}>{cell.render("Cell")}</td>
-                  ))}
-                </tr>
-              );
-            })}
+            {currentItems.length === 0 ? ( // Check if currentItems array is empty
+              <tr>
+                <td colSpan={columns.length} className="text-center">
+                  No matching records found.
+                </td>
+              </tr>
+            ) : (
+              currentItems.map((row) => {
+                prepareRow(row);
+                return (
+                  <tr {...row.getRowProps()}>
+                    {row.cells.map((cell) => (
+                      <td {...cell.getCellProps()}>{cell.render("Cell")}</td>
+                    ))}
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </Table>
 
         {/* Pagination */}
         <Pagination>
-          {[...Array(Math.ceil(rows.length / itemsPerPage)).keys()].map((number) => (
-            <Pagination.Item
-              key={number + 1}
-              active={number + 1 === currentPage}
-              onClick={() => paginate(number + 1)}
-            >
-              {number + 1}
-            </Pagination.Item>
-          ))}
+          {[...Array(Math.ceil(rows.length / itemsPerPage)).keys()].map(
+            (number) => (
+              <Pagination.Item
+                key={number + 1}
+                active={number + 1 === currentPage}
+                onClick={() => paginate(number + 1)}
+              >
+                {number + 1}
+              </Pagination.Item>
+            )
+          )}
         </Pagination>
       </div>
     </div>

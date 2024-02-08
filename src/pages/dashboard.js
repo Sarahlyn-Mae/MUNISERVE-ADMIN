@@ -40,7 +40,6 @@ const app = initializeApp(firebaseConfig);
 const firestore = getFirestore(app);
 
 const Dashboard = ({ count }) => {
-  //Function for the graph of the total number of transaction per month
   const [monthlyData, setMonthlyData] = useState([]);
 
   useEffect(() => {
@@ -67,7 +66,12 @@ const Dashboard = ({ count }) => {
         where("createdAt", "<", Timestamp.fromDate(new Date(`${year}-12-31`)))
       ),
       query(
-        collection(firestore, "businessPermit"),
+        collection(firestore, "marriage_reg"),
+        where("createdAt", ">", Timestamp.fromDate(new Date(`${year}-01-01`))),
+        where("createdAt", "<", Timestamp.fromDate(new Date(`${year}-12-31`)))
+      ),
+      query(
+        collection(firestore, "death_reg"),
         where("createdAt", ">", Timestamp.fromDate(new Date(`${year}-01-01`))),
         where("createdAt", "<", Timestamp.fromDate(new Date(`${year}-12-31`)))
       ),
@@ -127,7 +131,7 @@ const Dashboard = ({ count }) => {
     const fetchUserEmail = () => {
       if (user) {
         const email = user.email;
-        const truncatedEmail = email.length > 5 ? `${email.substring(0, 5)}...` : email;
+        const truncatedEmail = email.length > 9 ? `${email.substring(0, 9)}..` : email;
         setUserEmail(truncatedEmail);
       }
     };
@@ -138,10 +142,11 @@ const Dashboard = ({ count }) => {
   const [recordCounts, setRecordCounts] = useState({
     appointments: 0,
     birthRegistration: 0,
+    marriageRegistration: 0,
+    deathRegistration: 0,
     marriageCertificate: 0,
     deathCertificate: 0,
     jobApplication: 0,
-    businessPermit: 0,
   });
 
   useEffect(() => {
@@ -149,37 +154,39 @@ const Dashboard = ({ count }) => {
       try {
         const appointmentsCollection = collection(firestore, "appointments");
         const birthRegCollection = collection(firestore, "birth_reg");
+        const marriageRegCollection = collection(firestore, "marriage_reg");
+        const deathRegCollection = collection(firestore, "death_reg");
         const marriageCertCollection = collection(firestore, "marriageCert");
         const deathCertCollection = collection(firestore, "deathCert");
         const jobCollection = collection(firestore, "job");
-        const businessPermitCollection = collection(
-          firestore,
-          "businessPermit"
-        );
 
         const [
           appointmentsSnapshot,
           birthRegSnapshot,
+          marriageRegSnapshot,
+          deathRegSnapshot,
           marriageCertSnapshot,
           deathCertSnapshot,
           jobSnapshot,
-          businessPermitSnapshot,
+          
         ] = await Promise.all([
           getDocs(appointmentsCollection),
           getDocs(birthRegCollection),
+          getDocs(marriageRegCollection),
+          getDocs(deathRegCollection),
           getDocs(marriageCertCollection),
           getDocs(deathCertCollection),
           getDocs(jobCollection),
-          getDocs(businessPermitCollection),
         ]);
 
         const counts = {
           appointments: appointmentsSnapshot.size,
           birthRegistration: birthRegSnapshot.size,
+          marriageRegistration: marriageRegSnapshot.size,
+          deathRegistration: deathRegSnapshot.size,
           marriageCertificate: marriageCertSnapshot.size,
           deathCertificate: deathCertSnapshot.size,
           jobApplication: jobSnapshot.size,
-          businessPermit: businessPermitSnapshot.size,
         };
 
         console.log("Record Counts:", counts);
@@ -211,7 +218,8 @@ const Dashboard = ({ count }) => {
           "marriageCert",
           "deathCert",
           "job",
-          "businessPermit",
+          "marriage_reg",
+          "death_reg",
           "appointments",
         ];
 
@@ -274,7 +282,7 @@ const Dashboard = ({ count }) => {
   }, []);
 
   return (
-    <main className="main-container">
+    <main className="main-csontainer">
       <div className="sidebar">
         <Sidebar />
       </div>
@@ -285,8 +293,8 @@ const Dashboard = ({ count }) => {
             <h1>Dashboard</h1>
             <img src={notification} alt="Notification.png" className="notif" />
             <img src={logo} alt="logo" className="account-img" />
-            <div className="account-name">
-              <h1>{userEmail}</h1>
+            <div className="account-names">
+              <h2>{userEmail}</h2>
             </div>
           </div>
         </div>
@@ -338,21 +346,29 @@ const Dashboard = ({ count }) => {
             <div className="charts">
               <div className="row">
                 <div className="col-4">
-                  <h6>NO. OF APPLICATIONS PER SERVICES</h6>
                   <Chart
                     options={{
                       colors: ["#8884d8"],
                       chart: {
                         id: "record-bar",
                       },
+                      title: {
+                        text: "NO. OF APPLICATIONS PER SERVICES",
+                        align: "center",
+                        style: {
+                          fontSize: "16px",
+                          fontWeight: "bold",
+                        },
+                      },
                       xaxis: {
                         categories: [
                           "Appointments",
                           "Birth Registration",
+                          "Marriage Registration",
+                          "Death Registration",
                           "Marriage Certificate",
                           "Death Certificate",
                           "Job Application",
-                          "Business Permit",
                         ],
                       },
                     }}
@@ -362,16 +378,17 @@ const Dashboard = ({ count }) => {
                         data: [
                           recordCounts.appointments,
                           recordCounts.birthRegistration,
+                          recordCounts.marriageRegistration,
+                          recordCounts.deathRegistration,
                           recordCounts.marriageCertificate,
                           recordCounts.deathCertificate,
                           recordCounts.jobApplication,
-                          recordCounts.businessPermit,
                         ],
                       },
                     ]}
                     type="bar"
-                    width={500}
-                    height={400}
+                    width={650}
+                    height={500}
                   />
                 </div>
               </div>
@@ -380,12 +397,19 @@ const Dashboard = ({ count }) => {
 
           <div className="monthly-chart">
           <div className="col-4">
-            <h6>TOTAL TRANSACTION PER MONTH</h6>
             <ReactApexChart
               options={{
                 colors: ["#8884d8"],
                 chart: {
                   type: "bar",
+                },
+                title: {
+                  text: "TOTAL TRANSACTION PER MONTH",
+                  align: "center",
+                  style: {
+                    fontSize: "16px",
+                    fontWeight: "bold",
+                  },
                 },
                 xaxis: {
                   categories: monthlyData.map((data) => data.month),
@@ -395,8 +419,8 @@ const Dashboard = ({ count }) => {
                 { name: "Count", data: monthlyData.map((data) => data.count) },
               ]}
               type="bar"
-              width={500}
-              height={400}
+              width={650}
+              height={500}
             />
           </div>
           </div>

@@ -44,8 +44,6 @@ function getServiceTypeCollection(serviceType) {
       return collection(db, "deathCert");
     case "Job Application":
       return collection(db, "job");
-    case "Business Permit":
-      return collection(db, "businessPermit");
     case "Appointments":
       return collection(db, "appointments");
     default:
@@ -58,7 +56,6 @@ const serviceCollections = [
   "marriageCert",
   "deathCert",
   "job",
-  "businessPermit",
   "appointments",
   "marriage_reg",
   "death_reg",
@@ -75,13 +72,13 @@ function App() {
   const [barangayData, setBarangayData] = useState([]);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [yearlyDataForBarangay, setYearlyDataForBarangay] = useState([]);
+  const [yearlyDataBarangay, setYearlyDataBarangay] = useState([]);
   const [selectedBarangay, setSelectedBarangay] = useState(null);
   const [monthlyDataForBarangay, setMonthlyDataForBarangay] = useState([]);
   const [userCount, setUserCount] = useState(0);
   const [serviceTypeData, setServiceTypeData] = useState([]);
   const [serviceTypeMonthlyData, setServiceTypeMonthlyData] = useState([]);
   const [selectedServiceType, setSelectedServiceType] = useState(null);
-  const [drillDownData, setDrillDownData] = useState([]);
 
   const [dailyServiceData, setDailyServiceData] = useState([]);
   const [dailyData, setDailyData] = useState([]);
@@ -120,6 +117,7 @@ function App() {
   useEffect(() => {
     fetchMonthlyData();
     fetchYearlyDataForBarangay();
+    fetchYearlyDataBarangay();
     fetchMonthlyDataForSelectedBarangay();
     fetchUserCount();
     fetchMonthlyStatusData();
@@ -168,11 +166,6 @@ function App() {
       where("createdAt", ">=", startDate),
       where("createdAt", "<=", endDate)
     );
-    const businessPermitQuery = query(
-      collection(db, "businessPermit"),
-      where("createdAt", ">=", startDate),
-      where("createdAt", "<=", endDate)
-    );
     const appointmentsQuery = query(
       collection(db, "appointments"),
       where("createdAt", ">=", startDate),
@@ -183,7 +176,6 @@ function App() {
     const marriageCertSnapshot = await getDocs(marriageCertQuery);
     const deathCertSnapshot = await getDocs(deathCertQuery);
     const jobSnapshot = await getDocs(jobQuery);
-    const businessPermitSnapshot = await getDocs(businessPermitQuery);
     const appointmentsSnapshot = await getDocs(appointmentsQuery);
 
     const birthRegTransactions = birthRegSnapshot.docs.map((doc) => doc.data());
@@ -194,9 +186,6 @@ function App() {
       doc.data()
     );
     const jobTransactions = jobSnapshot.docs.map((doc) => doc.data());
-    const businessPermitTransactions = businessPermitSnapshot.docs.map((doc) =>
-      doc.data()
-    );
     const appointmentsTransaction = appointmentsSnapshot.docs.map((doc) =>
       doc.data()
     );
@@ -206,7 +195,6 @@ function App() {
       ...marriageCertTransactions,
       ...deathCertTransactions,
       ...jobTransactions,
-      ...businessPermitTransactions,
       ...appointmentsTransaction,
     ];
 
@@ -250,7 +238,7 @@ function App() {
         where("createdAt", "<", Timestamp.fromDate(new Date("2023-12-31")))
       ),
       query(
-        collection(db, "businessPermit"),
+        collection(db, "appointments"),
         where("createdAt", ">", Timestamp.fromDate(new Date("2023-01-01"))),
         where("createdAt", "<", Timestamp.fromDate(new Date("2023-12-31")))
       ),
@@ -356,19 +344,6 @@ function App() {
       ),
       query(
         collection(db, "job"),
-        where(
-          "createdAt",
-          ">=",
-          Timestamp.fromDate(new Date(`${currentYear}-01-01`))
-        ),
-        where(
-          "createdAt",
-          "<=",
-          Timestamp.fromDate(new Date(`${currentYear}-12-31`))
-        )
-      ),
-      query(
-        collection(db, "businessPermit"),
         where(
           "createdAt",
           ">=",
@@ -522,20 +497,6 @@ function App() {
           )
         ),
         query(
-          collection(db, "businessPermit"),
-          where("userBarangay", "==", barangay),
-          where(
-            "createdAt",
-            ">=",
-            Timestamp.fromDate(new Date(`${selectedYear}-01-01`))
-          ),
-          where(
-            "createdAt",
-            "<=",
-            Timestamp.fromDate(new Date(`${selectedYear}-12-31`))
-          )
-        ),
-        query(
           collection(db, "appointments"),
           where("userBarangay", "==", barangay),
           where(
@@ -652,19 +613,6 @@ function App() {
         )
       ),
       query(
-        collection(db, "businessPermit"),
-        where(
-          "createdAt",
-          ">=",
-          Timestamp.fromDate(new Date(`${currentYear}-${currentMonth + 1}-01`))
-        ),
-        where(
-          "createdAt",
-          "<=",
-          Timestamp.fromDate(new Date(`${currentYear}-${currentMonth + 1}-31`))
-        )
-      ),
-      query(
         collection(db, "appointments"),
         where(
           "createdAt",
@@ -734,7 +682,6 @@ function App() {
       "Marriage Registration",
       "Death Registration",
       "Job Application",
-      "Business Permit",
       "Appointments",
       "Request Copy of Marriage Certificate",
       "Request Copy of Death Certificate",
@@ -847,8 +794,9 @@ function App() {
     "birth_reg",
     "appointments",
     "marriageCert",
+    "marriage_reg",
+    "death_reg",
     "deathCert",
-    "businessPermit",
     "job",
   ];
 
@@ -901,10 +849,6 @@ function App() {
 
   const handleYearChange = (e) => {
     setYearFilter(e.target.value);
-  };
-
-  const handleServiceChange = (e) => {
-    setServiceFilter(e.target.value);
   };
 
   const fetchMonthlyStatusData = async () => {
@@ -963,15 +907,6 @@ function App() {
         ),
         query(
           collection(db, "job"),
-          where(
-            "createdAt",
-            ">",
-            Timestamp.fromDate(new Date(`${year}-01-01`))
-          ),
-          where("createdAt", "<", Timestamp.fromDate(new Date(`${year}-12-31`)))
-        ),
-        query(
-          collection(db, "businessPermit"),
           where(
             "createdAt",
             ">",
@@ -1060,7 +995,6 @@ function App() {
       const marriageCertCollection = collection(db, "marriageCert");
       const deathCertCollection = collection(db, "deathCert");
       const jobCollection = collection(db, "job");
-      const businessPermitCollection = collection(db, "businessPermit");
 
       const [
         appointmentsSnapshot,
@@ -1068,7 +1002,6 @@ function App() {
         marriageCertSnapshot,
         deathCertSnapshot,
         jobSnapshot,
-        businessPermitSnapshot,
       ] = await Promise.all([
         getDocs(
           query(
@@ -1105,13 +1038,6 @@ function App() {
             where("createdAt", "<=", endOfMonth)
           )
         ),
-        getDocs(
-          query(
-            businessPermitCollection,
-            where("createdAt", ">=", startOfMonth),
-            where("createdAt", "<=", endOfMonth)
-          )
-        ),
       ]);
 
       const counts = {
@@ -1120,7 +1046,6 @@ function App() {
         marriageCertificate: marriageCertSnapshot.size,
         deathCertificate: deathCertSnapshot.size,
         jobApplication: jobSnapshot.size,
-        businessPermit: businessPermitSnapshot.size,
       };
 
       console.log("Record Counts:", counts);
@@ -1137,6 +1062,115 @@ function App() {
   useEffect(() => {
     fetchRecordCounts();
   }, [selectedMonth]);
+
+  const fetchYearlyDataBarangay = async () => {
+    const yearlyData = await getYearlyDataBarangay(
+      selectedFilter.year,
+      selectedFilter.barangay
+    );
+    setYearlyDataBarangay(yearlyData);
+  };
+
+  const getYearlyDataBarangay = async (selectedYear, selectedBarangay) => {
+    const currentYear = new Date().getFullYear();
+
+    const barangayQuery = selectedBarangay
+      ? where("userBarangay", "==", selectedBarangay)
+      : [];
+
+    const collectionQueries = serviceCollections.map((service) =>
+      query(
+        collection(db, service),
+        where(
+          "createdAt",
+          ">=",
+          Timestamp.fromDate(new Date(`${selectedYear}-01-01`))
+        ),
+        where(
+          "createdAt",
+          "<=",
+          Timestamp.fromDate(new Date(`${selectedYear}-12-31`))
+        ),
+        ...barangayQuery
+      )
+    );
+
+    try {
+      // Execute all queries concurrently
+      const queryResults = await Promise.all(collectionQueries.map(getDocs));
+
+      // Extract data from query results
+      const serviceData = queryResults.map((snapshot, index) =>
+        snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            userBarangay: data.userBarangay,
+            serviceType: serviceCollections[index],
+          };
+        })
+      );
+
+      // Flatten the array of arrays and count occurrences of each combination of barangay and service type
+      const barangayServiceCounts = serviceData.flat().reduce((acc, item) => {
+        const key = `${item.userBarangay}_${item.serviceType}`;
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {});
+
+      // Create an array with objects for each barangay and counts for each service type
+      const yearlyData = Object.keys(barangayServiceCounts).reduce(
+        (acc, key) => {
+          const [barangay, serviceType] = key.split("_");
+          const existingData = acc.find((item) => item.barangay === barangay);
+          if (existingData) {
+            existingData[serviceType] = barangayServiceCounts[key];
+          } else {
+            const newData = {
+              barangay,
+              [serviceType]: barangayServiceCounts[key],
+            };
+            acc.push(newData);
+          }
+          return acc;
+        },
+        []
+      );
+
+      return yearlyData;
+    } catch (error) {
+      console.error("Error fetching yearly data for barangay:", error);
+      return [];
+    }
+  };
+
+  // State variables to store highest and lowest transaction data
+  const [highestTransaction, setHighestTransaction] = useState(null);
+  const [lowestTransaction, setLowestTransaction] = useState(null);
+
+  // Function to find the highest and lowest transactions
+  const findHighestAndLowestTransactions = () => {
+    if (yearlyDataForBarangay.length > 0) {
+      let highest = yearlyDataForBarangay[0];
+      let lowest = yearlyDataForBarangay[0];
+
+      yearlyDataForBarangay.forEach(data => {
+        if (data.count > highest.count) {
+          highest = data;
+        }
+        if (data.count < lowest.count) {
+          lowest = data;
+        }
+      });
+
+      setHighestTransaction(highest);
+      setLowestTransaction(lowest);
+    }
+  };
+
+  // useEffect hook to call the function once component mounts
+  useEffect(() => {
+    findHighestAndLowestTransactions();
+  }, [yearlyDataForBarangay]);
 
   return (
     <div>
@@ -1182,15 +1216,6 @@ function App() {
                   chart: {
                     type: "line",
                   },
-                  title: {
-                    text: "TOTAL TRANSACTIONS PER SERVICE",
-                    align: "center",
-                    style: {
-                      fontSize: "17px",
-                      fontWeight: "bold",
-                      marginTop: "40px",
-                    },
-                  },
                   xaxis: {
                     categories: Array.from(
                       {
@@ -1229,6 +1254,21 @@ function App() {
                 height={550}
               />
             </div>
+            <div className="description">
+              <h5 style={{ textAlign: "center",marginTop: "20px",fontWeight: "bold",}}>
+                Figure 1. TOTAL TRANSACTIONS PER SERVICES
+              </h5>
+              <p style={{ textAlign: "center",marginTop: "16px"}}>
+                Figure 1 illustrates the distribution of transactions across various services  
+                including birth registration, marriage registration, death registration, job application, 
+                and appointments within the selected time frame.
+                It offers insights into the volume of activity associated with each service, 
+                aiding in the assessment of service utilization and demand patterns.
+                The graph enables a comparative analysis of transaction volumes across these service 
+                categories, offering valuable insights into the distribution and utilization of 
+                administrative services based on the selected date range.
+              </p>
+            </div>
           </div>
         </div>
 
@@ -1255,14 +1295,6 @@ function App() {
                     options={{
                       chart: {
                         id: "record-bar",
-                      },
-                      title: {
-                        text: "NO. OF APPLICATIONS PER SERVICES",
-                        align: "center",
-                        style: {
-                          fontSize: "16px",
-                          fontWeight: "bold",
-                        },
                       },
                     }}
                     series={[
@@ -1316,16 +1348,6 @@ function App() {
                           },
                         ],
                       },
-                      {
-                        name: "Business Permit",
-                        data: [
-                          {
-                            x: "Business Permit",
-                            y: recordCounts.businessPermit,
-                            color: "#d73a4a",
-                          },
-                        ],
-                      },
                     ]}
                     type="bar"
                     width={700}
@@ -1339,11 +1361,12 @@ function App() {
                       textAlign: "center",
                       marginTop: "20px",
                       fontWeight: "bold",
+                      marginBottom: "20px",
                     }}
                   >
-                    Figure 2.
+                    Figure 2. NUMBER OF APPLICATIONS PER SERVICES
                   </h5>
-                    <h1>
+                    <p style={{ textAlign: "center",fontSize: "16px"}}>
                       The number of appointments for{" "}
                       {new Date(2000, selectedMonth - 1, 1).toLocaleString(
                         "default",
@@ -1367,8 +1390,8 @@ function App() {
                         100
                       ).toFixed(2)}
                       %.
-                    </h1>
-                    <h1>
+                    </p>
+                    <p style={{ textAlign: "center",fontSize: "16px"}}>
                       The number of Birth Registration for{" "}
                       {new Date(2000, selectedMonth - 1, 1).toLocaleString(
                         "default",
@@ -1392,8 +1415,8 @@ function App() {
                         100
                       ).toFixed(2)}
                       %.
-                    </h1>
-                    <h1>
+                    </p>
+                    <p style={{ textAlign: "center",fontSize: "16px"}}> 
                       The number of Marriage Certificate for{" "} {new Date(2000, selectedMonth - 1, 1).toLocaleString(
                         "default",
                         {
@@ -1413,8 +1436,8 @@ function App() {
                         100
                       ).toFixed(2)}
                       %.
-                    </h1>
-                    <h1>
+                    </p>
+                    <p style={{ textAlign: "center",fontSize: "16px"}}>
                       The number of Death Registration for{" "}
                       {new Date(2000, selectedMonth - 1, 1).toLocaleString(
                         "default",
@@ -1438,8 +1461,8 @@ function App() {
                         100
                       ).toFixed(2)}
                       %.
-                    </h1>
-                    <h1>
+                    </p>
+                    <p style={{ textAlign: "center",fontSize: "16px"}}>
                       The number of Job applications for{" "}
                       {new Date(2000, selectedMonth - 1, 1).toLocaleString(
                         "default",
@@ -1463,32 +1486,7 @@ function App() {
                         100
                       ).toFixed(2)}
                       %.
-                    </h1>
-                    <h1>
-                      The number of Business Permit for{" "}
-                      {new Date(2000, selectedMonth - 1, 1).toLocaleString(
-                        "default",
-                        {
-                          month: "long",
-                        }
-                      )}{" "}
-                      is {recordCounts.businessPermit} registrations, from all
-                      of the{" "}
-                      {Object.values(recordCounts).reduce(
-                        (acc, count) => acc + count,
-                        0
-                      )}{" "}
-                      transactions with a corresponding percentage of{" "}
-                      {(
-                        (recordCounts.businessPermit /
-                          Object.values(recordCounts).reduce(
-                            (acc, count) => acc + count,
-                            0
-                          )) *
-                        100
-                      ).toFixed(2)}
-                      %.
-                    </h1>
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1499,16 +1497,6 @@ function App() {
                     options={{
                       chart: {
                         type: "polarArea",
-                      },
-                      title: {
-                        text:
-                          "MOST ACQUIRED SERVICE FOR THE MONTH OF " +
-                          currentMonthName.toUpperCase(),
-                        align: "center",
-                        style: {
-                          fontSize: "16px",
-                          fontWeight: "bold",
-                        },
                       },
                       labels: serviceTypeData.map((data) => data.name),
                       fill: {
@@ -1568,20 +1556,20 @@ function App() {
                       fontWeight: "bold",
                     }}
                   >
-                    Figure 3.
+                     Figure 3. MOST ACQUIRED SERVICE FOR THE <br/> MONTH OF {currentMonthName.toUpperCase()}
                   </h5>
-                  <h1>
+                  <p style={{textAlign: "center",marginTop: "20px",fontSize: "16px",}}>
                     The most acquired service for this month of{" "}
-                    {currentMonthName} is {mostAcquiredService.name} <br /> with
+                    {currentMonthName} <br/> is {mostAcquiredService.name} with
                     a total of {mostAcquiredService.data} transactions or (
                     {mostAcquiredPercentage.toFixed(2)}%).
-                  </h1>
-                  <h1>
+                  </p>
+                  <p style={{textAlign: "center",marginTop: "20px",fontSize: "16px",}}>
                     The least acquired service for this month of{" "}
-                    {currentMonthName} is {leastAcquiredService.name} <br />{" "}
+                    {currentMonthName} <br/> is {leastAcquiredService.name} {" "}
                     with a total of {leastAcquiredService.data} transactions or
                     ({leastAcquiredPercentage.toFixed(2)}%).
-                  </h1>
+                  </p>
                 </div>
               </div>
             </div>
@@ -1605,14 +1593,6 @@ function App() {
                   },
                 },
               },
-              title: {
-                text: "Total Transactions per Barangays",
-                align: "center",
-                style: {
-                  fontSize: "16px",
-                  fontWeight: "bold",
-                },
-              },
               xaxis: {
                 type: "category",
                 categories: yearlyDataForBarangay.map((data) => data.barangay),
@@ -1629,10 +1609,34 @@ function App() {
               },
             ]}
             type="bar"
-            width={700}
+            width={1300}
             height={600}
           />
-          <div className="filterss">
+          <div className="description">
+              <h5 style={{ textAlign: "center",marginTop: "20px",fontWeight: "bold",}}>
+                Figure 4. TOTAL TRANSACTIONS PER BARANGAYS
+              </h5>
+              <p style={{ textAlign: "center",fontSize: "16px", fontWeight: "normal" }}>
+              Figure 4 illustrates the total number of transactions recorded for each barangay within a year. 
+              Transactions are categorized by barangay, providing a comprehensive overview of activity distribution across different areas.
+              The chart highlights the varying levels of transaction activity across barangays, with some areas showing higher transaction 
+              volumes compared to others.
+              <br /> <br />
+              The Barangay/s of {highestTransaction && highestTransaction.barangay} emerges as a significant contributor to the total 
+              transaction count, indicating a concentration of economic or social activity in this region. This heightened level of 
+              transactional engagement may signify various factors such as a larger population, increased demand for services, or 
+              perhaps centralized administrative functions that attract more interactions.
+              <br/> <br />
+              On the other hand, barangay/s like {lowestTransaction && lowestTransaction.barangay} exhibit lower transaction counts, 
+              suggesting potential areas for further analysis or exploration. The lower activity levels could stem from several 
+              factors, including smaller population size, limited access to services, or specific socioeconomic dynamics unique to 
+              these regions. Understanding the underlying reasons for these lower transaction counts is crucial for identifying areas 
+              of improvement, addressing potential disparities in service access, and ensuring equitable service delivery across all barangays.
+              </p>
+          </div>
+        </div>
+
+        <div className="filterss">
           <label>Year:</label>
           <select
             value={selectedFilter.year}
@@ -1663,17 +1667,9 @@ function App() {
                   stacked: true,
                 },
               },
-              title: {
-                text: "Total Transactions per Barangays",
-                align: "center",
-                style: {
-                  fontSize: "16px",
-                  fontWeight: "bold",
-                },
-              },
               xaxis: {
                 type: "category",
-                categories: yearlyDataForBarangay.map((data) => data.barangay),
+                categories: yearlyDataBarangay.map((data) => data.barangay),
                 labels: {
                   show: true,
                   rotate: -45,
@@ -1682,13 +1678,30 @@ function App() {
             }}
             series={serviceCollections.map((service) => ({
               name: service,
-              data: yearlyDataForBarangay.map((data) => data[service] || 0),
+              data: yearlyDataBarangay.map((data) => data[service] || 0),
             }))}
             type="bar"
-            width={700}
-            height={500}
+            width={1300}
+            height={600}
           />
-        </div>
+          <div className="description">
+              <h5 style={{ textAlign: "center",marginTop: "20px",fontWeight: "bold",}}>
+                Figure 5. TOTAL TRANSACTIONS PER BARANGAYS BASED ON SERVICE CATEGORIES
+              </h5>
+              <p style={{ textAlign: "center",fontSize: "16px", fontWeight: "normal" }}>
+              The chart illustrates the comprehensive overview of transactional activities 
+              across various barangays, focusing on distinct service categories such as birth 
+              registrations, marriage registrations, death registrations, appointment scheduling, 
+              and job applications. The primary objective is to provide a detailed analysis of 
+              the total number of transactions within each barangay for these specific services. <br/>
+              The visual representation offers valuable insights into the distribution and intensity 
+              of transactions, allowing for a comparative assessment of the service utilization 
+              patterns among different communities. This data-driven depiction facilitates a deeper 
+              understanding of the dynamics of public service engagement, enabling stakeholders to 
+              identify trends, allocate resources effectively, and make informed decisions to enhance 
+              the overall service delivery system.
+              </p>
+            </div>
         </div>
 
         <div className="analytics">
@@ -1697,14 +1710,6 @@ function App() {
               options={{
                 chart: {
                   type: "bar",
-                },
-                title: {
-                  text: "Total Transactions per Month based on Status",
-                  align: "center",
-                  style: {
-                    fontSize: "16px",
-                    fontWeight: "bold",
-                  },
                 },
                 xaxis: {
                   categories: monthlyStatusData.map((data) => data.month),
@@ -1745,8 +1750,23 @@ function App() {
               ]}
               type="bar"
               width={1300}
-              height={600}
+              height={700}
             />
+            <div className="description">
+              <h5 style={{ textAlign: "center",marginTop: "20px",fontWeight: "bold",}}>
+                Figure 6. TOTAL TRANSACTIONS PER MONTH BASED ON STATUS
+              </h5>
+              <p style={{ textAlign: "center",fontSize: "16px", fontWeight: "normal" }}>
+              The chart visually represents the distribution of total transactions across various 
+              status categories, providing an insightful overview of the current transaction landscape. 
+              Each segment of the chart corresponds to a distinct status category, namely "Pending," 
+              "Approved," "Disapproved," "On Process," and "Rejected." The height or size of each segment 
+              is proportional to the total number of transactions falling under that specific status.
+              This provides a visual comparison of the distribution of transactions across these statuses, 
+              enabling stakeholders to assess the overall status distribution and identify any potential 
+              bottlenecks, trends, or areas of improvement within the transactional workflow. 
+              </p>
+            </div>
           </div>
         </div>
       </div>

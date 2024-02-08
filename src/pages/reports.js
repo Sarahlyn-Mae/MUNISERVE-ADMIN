@@ -50,11 +50,10 @@ function App() {
   const collectionTypeMap = {
     birth_reg: "Birth Registration",
     marriage_reg: "Marriage Registration",
-    marriageCert: "Request Copy of Marriage Certificate",
+    marriageCert: "Copy of Marriage Certificate",
     death_reg: "Death Registration",
-    deathCert: "Request Copy of Death Certificate",
+    deathCert: "Copy of Death Certificate",
     appointments: "Appointments",
-    businessPermit: "Business Permit",
     job: "Job Application",
   };
 
@@ -66,7 +65,6 @@ function App() {
         "deathCert",
         "appointments",
         "job",
-        "businessPermit",
         "marriage_reg",
         "death_reg",
       ];
@@ -140,7 +138,10 @@ function App() {
 
     const columns = [
       {
-        Header: "Name of Applicant",
+        Header: "No.", // Auto-numbering column
+      },
+      {
+        Header: "Name",
         accessor: "userName",
       },
       {
@@ -167,40 +168,96 @@ function App() {
         Header: "Status",
         accessor: "status",
       },
-      // ... other columns ...
     ];
 
-    // Create a PDF document with landscape orientation
     const pdfDoc = new jsPDF({ orientation: "landscape" });
 
-    // Set font size and style
-    pdfDoc.setFontSize(12);
-    pdfDoc.setFont("helvetica", "bold");
+  const logoImg = new Image();
+  logoImg.src = logo;
+  pdfDoc.addImage(logoImg, "PNG", 95, 15, 20, 20);
 
-    // Add header row to PDF as a table
-    pdfDoc.autoTable({
-      head: [columns.map((column) => column.Header)],
-      startY: 10,
-      styles: { fontSize: 12, cellPadding: 2 },
-    });
+  pdfDoc.setFontSize(12);
+  let text = "Republic of the Philippines";
+  let textWidth = pdfDoc.getStringUnitWidth(text) * 12 / pdfDoc.internal.scaleFactor; // Assuming font size 12
+  let xPosition = (pdfDoc.internal.pageSize.getWidth() - textWidth) / 2;
+  pdfDoc.text(text, xPosition, 20);
+  
+  text = "Province of Camarines Sur";
+  textWidth = pdfDoc.getStringUnitWidth(text) * 12 / pdfDoc.internal.scaleFactor;
+  xPosition = (pdfDoc.internal.pageSize.getWidth() - textWidth) / 2;
+  pdfDoc.text(text, xPosition, 25);
+  
+  pdfDoc.setFontSize(14);
+  text = "Municipality of Del Gallego";
+  textWidth = pdfDoc.getStringUnitWidth(text) * 14 / pdfDoc.internal.scaleFactor;
+  xPosition = (pdfDoc.internal.pageSize.getWidth() - textWidth) / 2;
+  pdfDoc.text(text, xPosition, 30);
+  
+  const lineText = "-oo0oo-";
+  const lineTextWidth = pdfDoc.getStringUnitWidth(lineText) * 12 / pdfDoc.internal.scaleFactor; // Assuming font size 12
+  const lineXPosition = (pdfDoc.internal.pageSize.getWidth() - lineTextWidth) / 2;
+  pdfDoc.text(lineText, lineXPosition, 35);
+  
+  pdfDoc.setDrawColor(255, 255, 0);
+  pdfDoc.setLineWidth(0.2); 
+  pdfDoc.line(14, 38, 280, 38);
+  pdfDoc.setDrawColor(255, 255, 0);
+  pdfDoc.setLineWidth(1); 
+  pdfDoc.line(14, 39, 280, 39);
 
-    // Add data rows to PDF as a table
-    const dataRows = filteredData.map((item) =>
-      columns.map((column) => {
+    // Calculate row numbers and add them to the data rows
+    const dataRows = filteredData.map((item, index) => {
+      const rowData = columns.map((column) => {
         // Format date as a string if it exists and the column is "createdAt"
         if (column.accessor === "createdAt" && item[column.accessor]) {
           const dateValue = item[column.accessor]?.toDate?.();
           return dateValue ? new Date(dateValue).toLocaleDateString() : "";
         }
         return item[column.accessor] || "";
-      })
-    );
+      });
 
+      // Add the row number as the first column
+      rowData.unshift(index + 1);
+
+      return rowData;
+    });
+
+    // Add header row to PDF as a table with fixed column width
+    pdfDoc.autoTable({
+      head: [columns.map((column) => column.Header)],
+      startY: 43,
+      styles: { fontSize: 10, cellPadding: 2 },
+      columnWidth: { head: 100 }, // Set the width of header columns to 100px
+    });
+
+    // Add data rows to PDF as a table with fixed column width
     pdfDoc.autoTable({
       body: dataRows,
       startY: pdfDoc.autoTable.previous.finalY + 2,
       styles: { fontSize: 10, cellPadding: 2 },
+      columnWidth: { body: 100 }, // Set the width of body columns to 100px
     });
+
+    // Add footer to each page
+    const pageCount = pdfDoc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+        pdfDoc.setDrawColor(255, 255, 0);
+        pdfDoc.setLineWidth(0.2); 
+        pdfDoc.line(14, 191, 280, 191);
+        pdfDoc.setDrawColor(255, 255, 0);
+        pdfDoc.setLineWidth(1); 
+        pdfDoc.line(14, 192, 280, 192);
+        pdfDoc.setFontSize(11);
+        pdfDoc.text("Service Cellphone Number: 0905 399 3015",25,197);
+        pdfDoc.text("Email Address: delgallego1937@gmail.com",180,197);
+        pdfDoc.setFontSize(9);
+        pdfDoc.setPage(i);
+        const footerText = `Page ${i} of  ${pageCount}`;
+        const footerTextWidth = pdfDoc.getStringUnitWidth(footerText) * 12 / pdfDoc.internal.scaleFactor; // Assuming font size 12
+        const footerXPosition = (pdfDoc.internal.pageSize.getWidth() - footerTextWidth) / 2;
+        pdfDoc.text(footerText, footerXPosition, pdfDoc.internal.pageSize.getHeight() - 10); // Adjust Y position as needed
+    }
+
 
     // Save the PDF
     pdfDoc.save("All Records.pdf");
@@ -335,7 +392,7 @@ function App() {
       },
       {
         Header: "Name of Applicant",
-        accessor: "userName",
+        accessor: (row) => `${row.userName} ${row.userLastName}`,
       },
       {
         Header: "Service Type",
@@ -464,10 +521,6 @@ function App() {
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  const handleYearFilterChange = (event) => {
-    setSelectedYearFilter(event.target.value);
-  };
-
   const handleMonthFilterChange = (event) => {
     setSelectedMonthFilter(event.target.value);
   };
@@ -500,17 +553,27 @@ function App() {
     : defaultYears;
   const [availableYears, setAvailableYears] = useState(initialAvailableYears);
 
-const handleAddCustomYear = () => {
-  // You may want to perform validation here to ensure the input is a valid year
-  const updatedYears = [...availableYears, customYear].sort((a, b) => parseInt(b) - parseInt(a));
-  setAvailableYears(updatedYears);
+  const handleAddCustomYear = () => {
+    // You may want to perform validation here to ensure the input is a valid year
+    const updatedYears = [...availableYears, customYear].sort(
+      (a, b) => parseInt(b) - parseInt(a)
+    );
+    setAvailableYears(updatedYears);
 
-  // Save the updated years to local storage
-  localStorage.setItem("availableYears", JSON.stringify(updatedYears));
+    // Save the updated years to local storage
+    localStorage.setItem("availableYears", JSON.stringify(updatedYears));
 
-  setSelectedYearFilter(customYear);
-  setIsYearInputVisible(false);
-};
+    setSelectedYearFilter(customYear);
+    setIsYearInputVisible(false);
+  };
+
+  const handleYearFilterChange = (event) => {
+    const value = event.target.value;
+    setSelectedYearFilter(value);
+    if (value === "addYear") {
+      setIsYearInputVisible(true);
+    }
+  };
 
   return (
     <div>
@@ -534,7 +597,7 @@ const handleAddCustomYear = () => {
           <h1>All Records</h1>
         </div>
 
-        <div className="searches">
+        <div className="searchess">
           <FaSearch className="search-icons"></FaSearch>
           <input
             type="text"
@@ -544,19 +607,21 @@ const handleAddCustomYear = () => {
             className="search-input"
           />
           <div className="filter-container">
-            <label>Filter:</label>
-            <select
-              value={selectedYearFilter}
-              onChange={handleYearFilterChange}
-              className="filter"
-            >
-              <option value="">Year</option>
-              {availableYears.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
+          <label>Filter:</label>
+          <select
+            value={selectedYearFilter}
+            onChange={handleYearFilterChange}
+            className="filter"
+          >
+            <option value="">Year</option>
+            {availableYears.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+            <option value="addYear">Add Year</option>
+          </select>
+
             <select
               value={selectedMonthFilter}
               onChange={handleMonthFilterChange}
@@ -583,7 +648,8 @@ const handleAddCustomYear = () => {
             >
               <option value="">Day</option>
               <option value="1">1</option>
-              <option value="2">2</option>\<option value="3">3</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
               <option value="4">4</option>
               <option value="5">5</option>
               <option value="6">6</option>
@@ -662,18 +728,17 @@ const handleAddCustomYear = () => {
             >
               <option value="">Service Type</option>
               <option value="Birth Registration">Birth Registration</option>
-              <option value="Marriage Certificate">
-                Request Copy of Marriage Certificate
+              <option value="Copy of Marriage Certificate">
+                Copy of Marriage Certificate
               </option>
               <option value="Marriage Registration">
                 Marriage Registration
               </option>
-              <option value="Death Certificate">
-                Request Copy of Death Certificate
+              <option value="Copy of Death Certificate">
+                Copy of Death Certificate
               </option>
               <option value="Death Registration">Death Registration</option>
               <option value="Job Application">Job Application</option>
-              <option value="Business Permit">Business Permit</option>
               {/* Add options for other service types */}
             </select>
 
@@ -688,21 +753,6 @@ const handleAddCustomYear = () => {
               <option value="Rejected">Rejected</option>
               <option value="Pending">Pending</option>
             </select>
-          </div>
-
-          <div className="custom-year">
-            <button onClick={handleToggleYearInput}>+</button>
-            {isYearInputVisible && (
-              <div>
-                <input
-                  type="text"
-                  placeholder="Enter custom year"
-                  value={customYear}
-                  onChange={handleCustomYearChange}
-                />
-                <button onClick={handleAddCustomYear}>Add Year</button>
-              </div>
-            )}
           </div>
 
           <DropdownButton handleExport={handleExport} />
@@ -771,7 +821,6 @@ const DropdownButton = ({ handleExport }) => (
     <div className="dropdown-content">
       <button onClick={() => handleExport("pdf")}>Export as PDF</button>
       <button onClick={() => handleExport("csv")}>Export as CSV</button>
-      {/* Add more buttons for other export types */}
     </div>
   </div>
 );

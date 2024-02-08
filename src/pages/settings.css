@@ -1,0 +1,150 @@
+.profile-image {
+    border-radius: 50%;
+    width: 70px; /* Set the desired width */
+    height: 70px; /* Set the desired height */
+    object-fit: cover;
+    margin-left: 100px;
+  }
+  
+  .admin-profile,
+  .user-profile {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    margin-top: 90px;
+  }
+  
+
+  .user-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px; /* Adjust as needed */
+    border: transparent; 
+    margin-left: 60px;/* Optional: add border for visual separation */
+  }
+  
+  .user-buttons button {
+    margin-left: 20px; 
+    background-color: #307A59;
+    color: white;
+    border-color: #307A59;
+    box-shadow: #f8f8f8;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background-color 0.3s ease; 
+    height: 30px;
+    width: 30px;
+    
+  }
+.user-buttons button:hover{
+  background-color: #f8f8f8;
+  color: #307A59;
+  border-color: black;
+}
+
+  .content-container {
+    margin-top: 200px;
+    border: 1px solid #ccc;
+    padding: 15px;
+    background-color: #f8f8f8;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    margin-left: 100px;
+    margin-right: auto;
+    text-align: left; 
+  }
+
+  .privacy-container{
+    margin-top: 10px;
+    border: 1px solid #ccc;
+    padding: 15px;
+    background-color: #f8f8f8;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    margin-left: 100px;
+    margin-right: auto;
+    text-align: left;
+    
+  }
+  /* Styling for the arrow (span) */
+  .arrow {
+    cursor: pointer;
+    margin-bottom: 10px;
+    display: block;
+    /* Ensure the span takes up the full width */
+  }
+  .show{
+    margin-left: 355px;
+  }
+  
+  .show1{
+    margin-left: 450px;
+  }
+  /* Initially hide the content */
+  .hidden {
+    display: none;
+  }
+  
+  .icon{
+    color: #307A59;
+  }
+  
+  .text{
+    margin-left: 10px;
+  }
+  
+  p{
+   text-align: justify;
+  }
+  
+.add-user h3{
+  text-align: center;
+}
+
+.name label{
+  margin-left: 600px;
+}
+
+.email label{
+  margin-left: 600px;
+}
+
+.name input{
+  height: 30px;
+  width: 210px;
+  margin-left: 10px;
+  border-radius: 10px;
+}
+
+.email input{
+  height: 30px;
+  width: 210px;
+  margin-left: 15px;
+  margin-top: 10px;
+  border-radius: 10px;
+}
+
+  .add-user button{
+    margin-left: 715px; 
+    margin-top: 20px;
+    background-color: #307A59;
+    color: white;
+    border-color: #307A59;
+    box-shadow: #f8f8f8;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background-color 0.3s ease; 
+    height: 40px;
+    width: 90px;
+  }
+
+  .add-user button:hover{
+    background-color: #f8f8f8;
+    color: black;
+    border-color: black;
+  }

@@ -51,7 +51,7 @@ function App() {
 
   const fetchData = async () => {
     try {
-      const snapshot = await collection(firestore, "birth_reg");
+      const snapshot = await collection(firestore, "marriage_reg");
       const querySnapshot = await getDocs(snapshot);
       const items = querySnapshot.docs.map((doc) => ({
         id: doc.id,
@@ -101,10 +101,6 @@ function App() {
       {
         Header: "Name",
         accessor: "userName",
-      },
-      {
-        Header: "Service Type",
-        accessor: "collectionType",
       },
       {
         Header: "Residency",
@@ -218,31 +214,15 @@ function App() {
 
 
     // Save the PDF
-    pdfDoc.save("Birth Registration Record.pdf");
+    pdfDoc.save("Marriage Registration Record.pdf");
   };
 
 // Function to export data as CSV
 const exportDataAsCSV = () => {
     const columns = [
       {
-        Header: "Child Name",
-        accessor: (row) => `${row.c_fname} ${row.c_mname} ${row.c_lname}`,
-      },
-      {
-        Header: "Birth Date",
-        accessor: "birthdate",
-        Cell: ({ value }) => {
-          if (value) {
-              const date = value.toDate ? value.toDate() : value;
-              if (isValidDate(date)) {
-                  return format(date, "MMMM d, yyyy");
-              } else {
-                  return "Invalid Date";
-              }
-          } else {
-              return "N/A";
-          }
-      },
+        Header: "Name of Applicant",
+        accessor: (row) => `${row.userName} ${row.userLastName}`,
       },
       {
         Header: "Residency",
@@ -255,10 +235,6 @@ const exportDataAsCSV = () => {
       {
         Header: "Email",
         accessor: "userEmail",
-      },
-      {
-        Header: "User Name",
-        accessor: (row) => `${row.userName} ${row.userLastName}`,
       },
       {
         Header: "Date of Application",
@@ -280,6 +256,7 @@ const exportDataAsCSV = () => {
         Header: "Status",
         accessor: "status",
       },
+      // ... other columns ...
     ];
   
     // Create CSV header row based on column headers
@@ -371,25 +348,9 @@ const exportDataAsCSV = () => {
         accessor: (row, index) => index + 1, // Calculate row number
       },
       {
-        Header: "Child Name",
-        accessor: (row) => `${row.c_fname} ${row.c_mname} ${row.c_lname}`,
+        Header: "Name of Applicant",
+        accessor: (row) => `${row.userName} ${row.userLastName}`,
       },
-      {
-        Header: "Birth Date",
-        accessor: "birthdate",
-        Cell: ({ value }) => {
-            if (value) {
-                const date = value.toDate ? value.toDate() : value;
-                if (isValidDate(date)) {
-                    return format(date, "MMMM d, yyyy");
-                } else {
-                    return "Invalid Date";
-                }
-            } else {
-                return "N/A";
-            }
-        },
-    },
       {
         Header: "Residency",
         accessor: "userBarangay",
@@ -401,10 +362,6 @@ const exportDataAsCSV = () => {
       {
         Header: "Email",
         accessor: "userEmail",
-      },
-      {
-        Header: "Name of Applicant",
-        accessor: (row) => `${row.userName} ${row.userLastName}`,
       },
       {
         Header: "Date of Application",
@@ -432,9 +389,7 @@ const exportDataAsCSV = () => {
 
 // Filtering Dataaa
 const filteredData = data.filter((item) => {
-  const c_fname = item.c_fname?.toLowerCase();
-  const c_lname = item.c_lname?.toLowerCase();
-  const c_mname = item.c_mname?.toLowerCase();
+  const childName = item.childname?.toLowerCase();
   const createdAt = item.createdAt?.toDate?.();
   const formattedDate = createdAt?.toLocaleDateString('en-US', {
     year: 'numeric',
@@ -443,9 +398,8 @@ const filteredData = data.filter((item) => {
   })?.toLowerCase();
   const status = item.status?.toLowerCase();
   const userName = item.userName?.toLowerCase();
-  const userLastName = item.userLastName?.toLowerCase();
 
-  const filterByName = !searchQuery || (c_fname && c_fname.includes(searchQuery.toLowerCase())) || (c_lname && c_lname.includes(searchQuery.toLowerCase())) || (c_mname && c_mname.includes(searchQuery.toLowerCase())) || (userName && userName.includes(searchQuery.toLowerCase())) || (userLastName && userLastName.includes(searchQuery.toLowerCase()));
+  const filterByName = !searchQuery || (childName && childName.includes(searchQuery.toLowerCase())) || (userName && userName.includes(searchQuery.toLowerCase()));
   const filterByYear = !selectedYearFilter || (createdAt && createdAt.getFullYear().toString() === selectedYearFilter);
   const filterByMonth = !selectedMonthFilter || (formattedDate && formattedDate.includes(selectedMonthFilter.toLowerCase()));
   const filterByDay = !selectedDayFilter || (formattedDate && formattedDate.includes(selectedDayFilter));
@@ -482,12 +436,6 @@ const filteredData = data.filter((item) => {
   const handleStatusFilterChange = (event) => {setSelectedStatusFilter(event.target.value);
   };
 
-  const [selectedCertificate, setSelectedCertificate] = useState("marriage");
-
-  const handleCertificateChange = (event) => {
-    setSelectedCertificate(event.target.value);
-  };
-
   return (
     <div>
       <div className="sidebar">
@@ -510,7 +458,7 @@ const filteredData = data.filter((item) => {
             <h1>Service Categories</h1>
           </div>
 
-        <div className="screen">
+          <div className="screen">
           <div className="categories-container">
             <Link to="/birthreg" className="link">
               <button className="categories1">
@@ -557,7 +505,7 @@ const filteredData = data.filter((item) => {
         <h6 style={{textAlign: "center"}}>___________________________________________________________________________________________________________________________</h6>
 
         <div style={{textAlign: "center"}}>
-          <h1>Certificate of Live Birth</h1>
+          <h1>Marriage Registration</h1>
         </div>
 
         <div className="searches">
@@ -675,7 +623,7 @@ const filteredData = data.filter((item) => {
                             <div className="form-group">
                               <label>Name of Child</label>
                               <div className="placeholder">
-                                {selectedRow.values.c_fname}
+                                {selectedRow.values.childname}
                               </div>
                             </div>
                             <div className="form-group">
@@ -813,6 +761,18 @@ const filteredData = data.filter((item) => {
                         </div>
 
                         <div className="section">
+                          <h3>Proof of Payment</h3>
+                          <div className="proof">
+                            {item.payment ? (
+                              <img
+                                src={item.payment}
+                                alt="Proof of Payment"
+                                style={{ width: "150px", height: "300px" }}
+                              />
+                            ) : (
+                              <p>No payment proof available</p>
+                            )}
+                          </div>
                           <div className="form-group">
                             <label>Status of Appointment</label>
                             <div className="placeholder">
@@ -858,7 +818,7 @@ const filteredData = data.filter((item) => {
               })}
               {filteredData.length === 0 && (
                 <tr>
-                  <td colSpan="9" style={{ textAlign: "center" }}>
+                  <td colSpan="8" style={{ textAlign: "center" }}>
                     No matching records found.
                   </td>
                 </tr>

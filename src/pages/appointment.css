@@ -98,6 +98,14 @@
     margin-top: 80px;
 }
 
+.searchess {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    margin-top: 0px;
+    margin-left: 60px;
+}
+
 /* Style for the search icon */
 .search-icon {
   position: absolute;
@@ -407,4 +415,59 @@ tr:hover {
 
 .title h1 {
   font-weight: bold;
+}
+
+.form-control {
+  padding-left: 40px; /* Adjust the left padding to make space for the icon */
+  border: #307a59 1.4px solid;
+  border-radius: 5px;
+  outline: none;
+  font-size: 15px;
+  width: 270px;
+  height: 45px;
+  font-family: "Karla", sans-serif;
+  font-weight: 300;
+  margin-top: 0px;
+}
+
+.Modal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-dialog {
+  max-width: 80%;
+}
+
+.modal-content {
+  width: 100%;
+}
+
+.modal-dialog {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  margin: 0;
+  max-width: 100%; /* Adjust as needed */
+}
+
+.modal-content {
+  width: 100%; /* Ensure modal content fills the entire width */
+  max-width: 600px; /* Adjust max-width as needed */
+}
+
+.modal-btn {
+  background-color: #1e7566;
+  color: #f2f2f2;
+  border-radius: 5px;
+  border: none;
+  width: 70px;
+  height: 35px;
+}
+
+.modal-btn:hover {
+  background-color: #3fc589;
+  color: #1a1a1a;
 }

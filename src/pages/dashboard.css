@@ -47,10 +47,10 @@
     margin-top: 20px;
 }
 
-.notif {
+.notifs {
     width: 30px;
     height: 30px;
-    margin-left: 50px;
+    margin-left: 10px;
     cursor: pointer;
 }
 
@@ -65,24 +65,21 @@
     border-radius: 50px;
 }
 
-.account-name {
+.account-names {
     background-color: #307A59;
-    width: 115px;
+    width: 140px;
     height: 33px;
-    font-size: 14px;
-    color: #fff;
-    font-weight: 400;
     text-align: center;
     border-radius: 50px;
     display: flex;
     justify-content: center; /* Center the content horizontally */
     align-items: center; /* Center the content vertically */
-    margin-left: -25px;
+    margin-left: -20px;
     position: relative;
     z-index: 1;
 }
 
-.account-name h1 {
+.account-names h2 {
     margin: 0; 
     font-size: 14px;
     font-weight: 400;
@@ -237,7 +234,7 @@ h2 {
     justify-content: center;
     align-items: center;
     text-align: center;
-    margin-left: -100px;
+    margin-left: -20px;
 }
 
 .col-4 {

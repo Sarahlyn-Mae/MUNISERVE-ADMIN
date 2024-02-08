@@ -137,8 +137,8 @@ const Sidebar = () => {
           </SidebarMenuItem>
         </Link>
 
-        <Link to="/transactions" className="link">
-          <SidebarMenuItem isActive={activeMenu === '/transactions'}>
+        <Link to="/birthreg" className="link">
+          <SidebarMenuItem isActive={activeMenu === '/birthreg'}>
             <FontAwesomeIcon icon={faReceipt} className="icon" />
             Transactions
           </SidebarMenuItem>
@@ -178,6 +178,7 @@ const Sidebar = () => {
       </SidebarMenu>
 
       <BottomMenuItems>
+      <Link to="/settings" className="link">
         <SidebarMenuItem
           onClick={() => setActiveMenu('/settings')}
           isActive={activeMenu === '/settings'}
@@ -185,6 +186,8 @@ const Sidebar = () => {
           <FontAwesomeIcon icon={faGear} className="icon" />
           Settings
         </SidebarMenuItem>
+      </Link>
+
         <SidebarMenuItem onClick={handleLogout} isActive={activeMenu === '/logout'}>
           <FontAwesomeIcon icon={faArrowRightFromBracket} className="icon" />
           Logout

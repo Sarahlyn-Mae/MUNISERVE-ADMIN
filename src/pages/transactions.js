@@ -1,25 +1,21 @@
 import React, { useEffect, useState } from "react";
 import { initializeApp } from "firebase/app";
-import {
-  getFirestore,
-  collection,
-  query,
-  where,
-  getDocs,
-  Timestamp,
-} from "firebase/firestore";
+import { getFirestore, collection, getDocs } from "firebase/firestore";
+import { getStorage, ref, getDownloadURL } from "firebase/storage"; // Import Firebase Storage related functions
+import { useTable } from "react-table";
+import { saveAs } from "file-saver"; // Import file-saver for downloading
+import { FaSearch } from "react-icons/fa"; // Import icons
 import { Link } from "react-router-dom/cjs/react-router-dom.min";
-import Chart from "react-apexcharts";
-import ReactApexChart from "react-apexcharts";
-import "apexcharts";
 import "./transactions.css";
 import Sidebar from "../components/sidebar";
 import notification from "../assets/icons/Notification.png";
 import logo from "../assets/logo.png";
-import "react-datepicker/dist/react-datepicker.css";
-import useAuth from "../components/useAuth";
-import axios from "axios";
-import ApexCharts from "react-apexcharts";
+import jsPDF from "jspdf";
+import { format } from "date-fns";
+import { enUS } from "date-fns/locale";
+import { Table, Pagination } from "react-bootstrap";
+import "bootstrap/dist/css/bootstrap.min.css";
+
 
 // Firebase configuration
 const firebaseConfig = {
@@ -34,718 +30,445 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-const serviceCollections = [
-  "birth_reg",
-  "marriageCert",
-  "deathCert",
-  "job",
-  "businessPermit",
-  "appointments",
-  "marriage_reg",
-  "death_reg",
-];
+const firestore = getFirestore(app);
 
 function App() {
-  const [dayTransactions, setDayTransactions] = useState(0);
-  const [weekTransactions, setWeekTransactions] = useState(0);
-  const [monthTransactions, setMonthTransactions] = useState(0);
-  const [yearTransactions, setYearTransactions] = useState(0);
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [monthlyData, setMonthlyData] = useState([]);
-  const [monthlyStatusData, setMonthlyStatusData] = useState([]);
-  const [barangayData, setBarangayData] = useState([]);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [yearlyDataForBarangay, setYearlyDataForBarangay] = useState([]);
-  const [selectedBarangay, setSelectedBarangay] = useState(null);
-  const [monthlyDataForBarangay, setMonthlyDataForBarangay] = useState([]);
-  const [usersCount, setUsersCount] = useState(0);
-  const [webUsersCount, setWebUsersCount] = useState(0);
-  const [serviceTypeData, setServiceTypeData] = useState([]);
-  const [recordCounts, setRecordCounts] = useState(null);
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
-  const [noRecordsMessage, setNoRecordsMessage] = useState("");
-  const { user } = useAuth();
-  const [userEmail, setUserEmail] = useState("");
+  // State to hold the fetched data
+  const [data, setData] = useState([]);
+  // Initialize Firebase Storage
+  const storage = getStorage(app);
+  const [searchQuery, setSearchQuery] = useState(""); // New state for the search query
+  const [selectedRow, setSelectedRow] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const [selectedFilter, setSelectedFilter] = useState({
-    barangay: null,
-    year: new Date().getFullYear(),
-    serviceType: null,
-  });
+  const [selectedYearFilter, setSelectedYearFilter] = useState("");
+  const [selectedMonthFilter, setSelectedMonthFilter] = useState("");
+  const [selectedDayFilter, setSelectedDayFilter] = useState("");
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState("");
 
-  useEffect(() => {
-    const fetchUserEmail = () => {
-      if (user) {
-        const email = user.email;
-        const truncatedEmail =
-          email.length > 7 ? `${email.substring(0, 7)}...` : email;
-        setUserEmail(truncatedEmail);
-      }
-    };
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-    fetchUserEmail();
-  }, [user]);
-
-  useEffect(() => {
-    // Fetch and count transactions for the day
-    fetchTransactions("day");
-
-    // Fetch and count transactions for the week
-    fetchTransactions("week");
-
-    // Fetch and count transactions for the month
-    fetchTransactions("month");
-
-    // Fetch and count transactions for the year
-    fetchTransactions("year");
-    fetchUserCount();
-    fetchYearlyDataForBarangay();
-    fetchRecordCounts();
-  }, [selectedBarangay, serviceTypeData, selectedYear, selectedFilter, selectedMonth]);
-
-  const fetchUserCount = async () => {
+  const fetchData = async () => {
     try {
-      // Assuming you have both 'web_users' and 'users' collections in your Firebase database
-      const webUsersQuery = query(collection(db, "web_users"));
-      const usersQuery = query(collection(db, "users"));
-
-      const [webUsersSnapshot, usersSnapshot] = await Promise.all([
-        getDocs(webUsersQuery),
-        getDocs(usersQuery),
-      ]);
-
-      const webUsersCount = webUsersSnapshot.size;
-      const usersCount = usersSnapshot.size;
-
-      setWebUsersCount(webUsersCount);
-      setUsersCount(usersCount);
+      const snapshot = await collection(firestore, "birth_reg");
+      const querySnapshot = await getDocs(snapshot);
+      const items = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+  
+      console.log("Fetched Data:", items);  // Add this line
+  
+      // Fetch image URLs from Firebase Storage and add them to the data
+      for (const item of items) {
+        if (item.imagePath) {
+          const imageUrl = await getDownloadURL(ref(storage, item.imagePath));
+          item.imageUrl = imageUrl; // Store the image URL in the data
+        }
+      }
+  
+      // Sort the data based on createdAt timestamp in descending order
+      items.sort((a, b) => {
+        const aSeconds = a.createdAt?.seconds || 0;
+        const bSeconds = b.createdAt?.seconds || 0;
+        return bSeconds - aSeconds;
+      });
+  
+      setData(items);
+      setLoading(false);  // Add this line to indicate data loading is complete
     } catch (error) {
-      console.error("Error fetching user count:", error);
+      console.error("Error fetching data: ", error);
+      setError(error);
+      setLoading(false);  // Add this line to indicate data loading is complete
     }
   };
+  
 
-  const fetchTransactions = async (timeInterval, customDate) => {
-    const currentDate = customDate || new Date();
-    let startDate;
-    let count; // Declare count variable
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-    switch (timeInterval) {
-      case "day":
-        startDate = new Date(
-          currentDate.getFullYear(),
-          currentDate.getMonth(),
-          currentDate.getDate()
-        );
-        break;
-      case "week":
-        startDate = getStartOfWeek(currentDate);
-        break;
-      case "month":
-        startDate = getStartOfMonth(currentDate);
-        break;
-      case "year":
-        startDate = getStartOfYear(currentDate);
-        break;
-      default:
-        startDate = currentDate;
-    }
-
-    const transactions = await getTransactions(startDate, currentDate);
-    count = transactions.length; // Assign a value to count
-    updateTransactionCount(timeInterval, count);
-  };
-
-  const getStartOfWeek = (date) => {
-    const dayOfWeek = date.getDay(); // 0 is Sunday, 1 is Monday, etc.
-    const startDate = new Date(date);
-    startDate.setDate(date.getDate() - dayOfWeek); // Move to the start of the current week
-    return startDate;
-  };
-
-  const getStartOfMonth = (date) => {
-    return new Date(date.getFullYear(), date.getMonth(), 1);
-  };
-
-  const getStartOfYear = (date) => {
-    return new Date(date.getFullYear(), 0, 1);
-  };
-
-  const getTransactions = async (startDate, endDate) => {
-    const birthRegQuery = query(
-      collection(db, "birth_reg"),
-      where("createdAt", ">=", startDate),
-      where("createdAt", "<=", endDate)
-    );
-    const marriageCertQuery = query(
-      collection(db, "marriageCert"),
-      where("createdAt", ">=", startDate),
-      where("createdAt", "<=", endDate)
-    );
-    const deathCertQuery = query(
-      collection(db, "deathCert"),
-      where("createdAt", ">=", startDate),
-      where("createdAt", "<=", endDate)
-    );
-    const jobQuery = query(
-      collection(db, "job"),
-      where("createdAt", ">=", startDate),
-      where("createdAt", "<=", endDate)
-    );
-    const businessPermitQuery = query(
-      collection(db, "businessPermit"),
-      where("createdAt", ">=", startDate),
-      where("createdAt", "<=", endDate)
-    );
-    const appointmentsQuery = query(
-      collection(db, "appointments"),
-      where("createdAt", ">=", startDate),
-      where("createdAt", "<=", endDate)
-    );
-
-    const birthRegSnapshot = await getDocs(birthRegQuery);
-    const marriageCertSnapshot = await getDocs(marriageCertQuery);
-    const deathCertSnapshot = await getDocs(deathCertQuery);
-    const jobSnapshot = await getDocs(jobQuery);
-    const businessPermitSnapshot = await getDocs(businessPermitQuery);
-    const appointmentsSnapshot = await getDocs(appointmentsQuery);
-
-    const birthRegTransactions = birthRegSnapshot.docs.map((doc) => doc.data());
-    const marriageCertTransactions = marriageCertSnapshot.docs.map((doc) =>
-      doc.data()
-    );
-    const deathCertTransactions = deathCertSnapshot.docs.map((doc) =>
-      doc.data()
-    );
-    const jobTransactions = jobSnapshot.docs.map((doc) => doc.data());
-    const businessPermitTransactions = businessPermitSnapshot.docs.map((doc) =>
-      doc.data()
-    );
-    const appointmentsTransaction = appointmentsSnapshot.docs.map((doc) =>
-      doc.data()
-    );
-
-    const allTransactions = [
-      ...birthRegTransactions,
-      ...marriageCertTransactions,
-      ...deathCertTransactions,
-      ...jobTransactions,
-      ...businessPermitTransactions,
-      ...appointmentsTransaction,
+  // PDF File
+  const exportDataAsPDF = () => {
+    const columns = [
+        {
+            Header: "Child Name",
+            accessor: (row) => `${row.c_fname} ${row.c_lname}`,
+        },
+        {
+          Header: "Birth Date",
+          accessor: (row) => {
+              const date = row.birthdate.toDate ? row.birthdate.toDate() : row.birthdate;
+              return date ? format(date, "MMMM d, yyyy", { locale: enUS }) : "";
+          },
+          Cell: ({ value }) => {
+              if (value) {
+                  return value;
+              } else {
+                  return "Invalid Date";
+              }
+          },
+      },      
+        {
+            Header: "Residency",
+            accessor: "userBarangay",
+        },
+        {
+            Header: "Mobile No.",
+            accessor: "userContact",
+        },
+        {
+            Header: "Email",
+            accessor: "userEmail",
+        },
+        {
+            Header: "User Name",
+            accessor: (row) => `${row.userName} ${row.userLastName}`,
+        },
+        {
+            Header: "Date of Application",
+            accessor: (row) => {
+                const date = row.createdAt.toDate ? row.createdAt.toDate() : row.createdAt;
+                return date ? [date.getFullYear(), date.getMonth() + 1, date.getDate()].map(String) : [];
+            },
+            Cell: ({ value }) => {
+                if (value && value.length === 3) {
+                    return value.join("-");
+                } else {
+                    return "Invalid Date";
+                }
+            },
+        },
+        {
+            Header: "Status",
+            accessor: "status",
+        },
+        // ... other columns ...
     ];
 
-    return allTransactions;
-  };
+    // Create a PDF document
+    const pdfDoc = new jsPDF({ orientation: "landscape" });
 
-  const updateTransactionCount = (timeInterval, count) => {
-    switch (timeInterval) {
-      case "day":
-        setDayTransactions(count);
-        break;
-      case "week":
-        setWeekTransactions(count);
-        break;
-      case "month":
-        setMonthTransactions(count);
-        break;
-      case "year":
-        setYearTransactions(count);
-        break;
-      default:
-        break;
-    }
-  };
+    // Set font size and style
+    pdfDoc.setFontSize(12);
+    pdfDoc.setFont("helvetica", "bold");
 
-  const chartData = {
-    day: {
-      series: [dayTransactions],
-      options: {
-        chart: {
-          type: "radialBar",
-        },
-        plotOptions: {
-          radialBar: {
-            offsetY: 0,
-            startAngle: 0,
-            endAngle: 360,
-            hollow: {
-              margin: 5,
-              size: "50%",
-              background: "transparent",
-              image: undefined,
-              imageOffsetX: 0,
-              imageOffsetY: 0,
-              position: "front",
-            },
-            dataLabels: {
-              name: {
-                show: true,
-                fontSize: "10px",
-                fontWeight: "light",
-                color: "#000",
-                offsetY: -5,
-              },
-              value: {
-                show: true,
-                offsetY: 5,
-                color: "blue",
-                fontSize: "25px",
-                fontWeight: "bold",
-                formatter: function (val) {
-                  return val;
-                },
-              },
-            },
-          },
-        },
-        fill: {
-          colors: ["#F2233B"],
-        },
-        labels: ["Today"],
-      },
-    },
-    week: {
-      series: [weekTransactions],
-      options: {
-        chart: {
-          type: "radialBar",
-        },
-        plotOptions: {
-          radialBar: {
-            offsetY: 0,
-            startAngle: 0,
-            endAngle: 360,
-            hollow: {
-              margin: 5,
-              size: "50%",
-              background: "transparent",
-              image: undefined,
-              imageOffsetX: 0,
-              imageOffsetY: 0,
-              position: "front",
-            },
-            dataLabels: {
-              name: {
-                show: true,
-                fontSize: "10px",
-                fontWeight: "light",
-                color: "#000",
-                offsetY: -5,
-              },
-              value: {
-                show: true,
-                offsetY: 5,
-                color: "blue",
-                fontSize: "25px",
-                fontWeight: "bold",
-                formatter: function (val) {
-                  return val;
-                },
-              },
-            },
-          },
-        },
-        fill: {
-          colors: ["#4B07C0"],
-        },
-        labels: ["This Week"],
-      },
-    },
-    month: {
-      series: [monthTransactions],
-      options: {
-        chart: {
-          type: "radialBar",
-        },
-        plotOptions: {
-          radialBar: {
-            offsetY: 0,
-            startAngle: 0,
-            endAngle: 360,
-            hollow: {
-              margin: 5,
-              size: "50%",
-              background: "transparent",
-              image: undefined,
-              imageOffsetX: 0,
-              imageOffsetY: 0,
-              position: "front",
-            },
-            dataLabels: {
-              name: {
-                show: true,
-                fontSize: "10px",
-                fontWeight: "light",
-                color: "#000",
-                offsetY: -5,
-              },
-              value: {
-                show: true,
-                offsetY: 5,
-                color: "blue",
-                fontSize: "25px",
-                fontWeight: "bold",
-                formatter: function (val) {
-                  return val;
-                },
-              },
-            },
-          },
-        },
-        fill: {
-          colors: ["#FF7247"], // Change the color of the radial bar
-        },
-        labels: ["This Month"],
-      },
-    },
-    year: {
-      series: [yearTransactions],
-      options: {
-        chart: {
-          type: "radialBar",
-        },
-        plotOptions: {
-          radialBar: {
-            offsetY: 0,
-            startAngle: 0,
-            endAngle: 360,
-            hollow: {
-              margin: 5,
-              size: "50%",
-              background: "transparent",
-              image: undefined,
-              imageOffsetX: 0,
-              imageOffsetY: 0,
-              position: "front",
-            },
-            dataLabels: {
-              name: {
-                show: true,
-                fontSize: "10px",
-                fontWeight: "light",
-                color: "#000",
-                offsetY: -5,
-              },
-              value: {
-                show: true,
-                offsetY: 5,
-                color: "blue",
-                fontSize: "25px",
-                fontWeight: "bold",
-                formatter: function (val) {
-                  return val;
-                },
-              },
-            },
-          },
-        },
-        fill: {
-          colors: ["#00C853"], // Change the color of the radial bar for the year
-        },
-        labels: ["This Year"],
-      },
-    },
-    selectedDate: {
-      series: [], // Fetch the transactions for the selected date and get the count
-      options: {
-        // Radial bar options for the selected date
-      },
-    },
-    users: {
-      series: [usersCount],
-      options: {
-        chart: {
-          type: "radialBar",
-        },
-        plotOptions: {
-          radialBar: {
-            offsetY: 0,
-            startAngle: 0,
-            endAngle: 360,
-            hollow: {
-              margin: 5,
-              size: "50%",
-              background: "transparent",
-              image: undefined,
-              imageOffsetX: 0,
-              imageOffsetY: 0,
-              position: "front",
-            },
-            dataLabels: {
-              name: {
-                show: true,
-                fontSize: "10px",
-                fontWeight: "light",
-                color: "#000",
-                offsetY: -5,
-              },
-              value: {
-                show: true,
-                offsetY: 5,
-                color: "blue",
-                fontSize: "25px",
-                fontWeight: "bold",
-                formatter: function (val) {
-                  return val;
-                },
-              },
-            },
-          },
-        },
-        fill: {
-          colors: ["#2196F3"],
-        },
-        labels: ["Residents"],
-      },
-    },
-    webUsers: {
-      series: [webUsersCount],
-      options: {
-        chart: {
-          type: "radialBar",
-        },
-        plotOptions: {
-          radialBar: {
-            offsetY: 0,
-            startAngle: 0,
-            endAngle: 360,
-            hollow: {
-              margin: 5,
-              size: "50%",
-              background: "transparent",
-              image: undefined,
-              imageOffsetX: 0,
-              imageOffsetY: 0,
-              position: "front",
-            },
-            dataLabels: {
-              name: {
-                show: true,
-                fontSize: "10px",
-                fontWeight: "light",
-                color: "#000",
-                offsetY: -5,
-              },
-              value: {
-                show: true,
-                offsetY: 5,
-                color: "blue",
-                fontSize: "25px",
-                fontWeight: "bold",
-                formatter: function (val) {
-                  return val;
-                },
-              },
-            },
-          },
-        },
-        fill: {
-          colors: ["#2196F3"],
-        },
-        labels: ["Web Users"],
-      },
-    },
-  };
+    // Add header row to PDF as a table
+    pdfDoc.autoTable({
+        head: [columns.map((column) => column.Header)],
+        startY: 10,
+        styles: { fontSize: 12, cellPadding: 2 },
+    });
 
-  const fetchYearlyDataForBarangay = async () => {
-    const yearlyData = await getYearlyDataForBarangay(
-      selectedFilter.year,
-      selectedFilter.barangay
-    );
-    setYearlyDataForBarangay(yearlyData);
-  };
+    // Add data rows to PDF as a table
+    const dataRows = data.map((item) =>
+        columns.map((column) => {
+            // Use accessor function if provided
+            const cellValue = typeof column.accessor === 'function' ? column.accessor(item) : item[column.accessor];
 
-  const getYearlyDataForBarangay = async (selectedYear, selectedBarangay) => {
-    const currentYear = new Date().getFullYear();
+            // Format date as a string if it exists
+            if (Array.isArray(cellValue)) {
+                return cellValue.join("-");
+            } else if (column.accessor === "createdAt" && cellValue) {
+                return cellValue.toDate().toLocaleDateString() || "";
+            }
 
-    const barangayQuery = selectedBarangay
-      ? where("userBarangay", "==", selectedBarangay)
-      : [];
-
-    const collectionQueries = serviceCollections.map((service) =>
-      query(
-        collection(db, service),
-        where(
-          "createdAt",
-          ">=",
-          Timestamp.fromDate(new Date(`${selectedYear}-01-01`))
-        ),
-        where(
-          "createdAt",
-          "<=",
-          Timestamp.fromDate(new Date(`${selectedYear}-12-31`))
-        ),
-        ...barangayQuery
-      )
-    );
-
-    try {
-      // Execute all queries concurrently
-      const queryResults = await Promise.all(collectionQueries.map(getDocs));
-
-      // Extract data from query results
-      const serviceData = queryResults.map((snapshot, index) =>
-        snapshot.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            userBarangay: data.userBarangay,
-            serviceType: serviceCollections[index],
-          };
+            // Return an empty string if the cell value is undefined or null
+            return cellValue !== undefined && cellValue !== null ? cellValue : "";
         })
-      );
+    );
 
-      // Flatten the array of arrays and count occurrences of each combination of barangay and service type
-      const barangayServiceCounts = serviceData.flat().reduce((acc, item) => {
-        const key = `${item.userBarangay}_${item.serviceType}`;
-        acc[key] = (acc[key] || 0) + 1;
-        return acc;
-      }, {});
+    // Calculate the maximum width for each column based on content
+    const columnWidths = columns.map((column, columnIndex) => {
+        const headerWidth = pdfDoc.getStringUnitWidth(column.Header) * 12 / pdfDoc.internal.scaleFactor;
+        const maxDataWidth = Math.max(...dataRows.map((row) => pdfDoc.getStringUnitWidth(String(row[columnIndex])) * 7 / pdfDoc.internal.scaleFactor));
+        const totalWidth = Math.max(headerWidth, maxDataWidth) + 8; // Calculate total width with padding
 
-      // Create an array with objects for each barangay and counts for each service type
-      const yearlyData = Object.keys(barangayServiceCounts).reduce(
-        (acc, key) => {
-          const [barangay, serviceType] = key.split("_");
-          const existingData = acc.find((item) => item.barangay === barangay);
-          if (existingData) {
-            existingData[serviceType] = barangayServiceCounts[key];
-          } else {
-            const newData = {
-              barangay,
-              [serviceType]: barangayServiceCounts[key],
-            };
-            acc.push(newData);
-          }
-          return acc;
+        return totalWidth;
+    });
+
+    // Add data rows to PDF as a table with calculated column widths
+    pdfDoc.autoTable({
+        body: dataRows,
+        startY: pdfDoc.autoTable.previous.finalY + 2,
+        styles: { fontSize: 8, cellPadding: 2 },
+        columnStyles: {
+            // Apply calculated column widths
+            ...columns.reduce((styles, column, index) => {
+                styles[index] = { cellWidth: columnWidths[index] };
+                return styles;
+            }, {}),
         },
-        []
-      );
+    });
 
-      return yearlyData;
-    } catch (error) {
-      console.error("Error fetching yearly data for barangay:", error);
-      return [];
+    // Save the PDF
+    pdfDoc.save("Birth_Registration_Records.pdf");
+};
+
+// Function to export data as CSV
+const exportDataAsCSV = () => {
+    const columns = [
+      {
+        Header: "Child Name",
+        accessor: (row) => `${row.c_fname} ${row.c_mname} ${row.c_lname}`,
+      },
+      {
+        Header: "Birth Date",
+        accessor: "birthdate",
+        Cell: ({ value }) => {
+          if (value) {
+              const date = value.toDate ? value.toDate() : value;
+              if (isValidDate(date)) {
+                  return format(date, "MMMM d, yyyy");
+              } else {
+                  return "Invalid Date";
+              }
+          } else {
+              return "N/A";
+          }
+      },
+      },
+      {
+        Header: "Residency",
+        accessor: "userBarangay",
+      },
+      {
+        Header: "Mobile No.",
+        accessor: "userContact",
+      },
+      {
+        Header: "Email",
+        accessor: "userEmail",
+      },
+      {
+        Header: "User Name",
+        accessor: (row) => `${row.userName} ${row.userLastName}`,
+      },
+      {
+        Header: "Date of Application",
+        accessor: "createdAt",
+        Cell: ({ value }) => {
+          if (value) {
+              const date = value.toDate ? value.toDate() : value;
+              if (isValidDate(date)) {
+                  return format(date, "MMMM d, yyyy");
+              } else {
+                  return "Invalid Date";
+              }
+          } else {
+              return "N/A";
+          }
+      },
+      },
+      {
+        Header: "Status",
+        accessor: "status",
+      },
+    ];
+  
+    // Create CSV header row based on column headers
+    let csvContent = columns.map((column) => `${column.Header || ""}`).join(",") + "\n";
+  
+    // Add data rows to CSV
+    data.forEach((item) => {
+      const row = columns
+        .map((column) => {
+          // Use accessor function if provided
+          const cellValue = typeof column.accessor === 'function' ? column.accessor(item) : item[column.accessor];
+  
+          // Format date as a string if it exists
+          let cellContent = cellValue || "";
+  
+          // Convert date to string if it exists
+          if (column.accessor === "createdAt" && cellValue) {
+            const date = cellValue.toDate ? cellValue.toDate() : cellValue;
+            cellContent = isValidDate(date) ? date.toLocaleDateString() : "Invalid Date";
+          }
+  
+          // Truncate cell content if it exceeds a certain length (adjust the length as needed)
+          const maxLength = column.width || 100; // Use column width as max length
+          if (cellContent.length > maxLength) {
+            cellContent = cellContent.substring(0, maxLength - 100) + "...";
+          }
+  
+          return `${cellContent}`;
+        })
+        .join(",") + "\n";
+  
+      csvContent += row;
+    });
+  
+    // Create a Blob containing the CSV data
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
+  
+    // Create a download link
+    const link = document.createElement("a");
+    link.href = window.URL.createObjectURL(blob);
+    link.download = "Birth Registration_Records.csv";
+  
+    // Append the link to the document
+    document.body.appendChild(link);
+  
+    // Trigger a click event on the link to initiate the download
+    link.click();
+  
+    // Remove the link from the document
+    document.body.removeChild(link);
+  };
+
+  // Function to handle export based on type
+  const handleExport = (exportType) => {
+    if (exportType === "pdf") {
+      exportDataAsPDF();
+    } else if (exportType === "csv") {
+      exportDataAsCSV();
     }
+    // Add more conditions for other export types if needed
   };
 
-  const handleBarangayChange = (selectedBarangay) => {
-    setSelectedFilter((prevFilter) => ({
-      ...prevFilter,
-      barangay: selectedBarangay,
-    }));
+  const openModal = async (row) => {
+    setSelectedRow(row);
+    setIsModalOpen(true);
   };
 
-  const handleYearChange = (selectedYear) => {
-    setSelectedFilter((prevFilter) => ({
-      ...prevFilter,
-      year: selectedYear,
-    }));
+  const closeModal = () => {
+    setSelectedRow(null);
+    setIsModalOpen(false);
   };
 
-  const handleServiceTypeChange = (selectedServiceType) => {
-    setSelectedFilter((prevFilter) => ({
-      ...prevFilter,
-      serviceType: selectedServiceType,
-    }));
+  const isValidDate = (date) => {
+    return date instanceof Date && !isNaN(date);
   };
 
-  const fetchRecordCounts = async () => {
-    try {
-      const currentYear = new Date().getFullYear();
-      const startOfMonth = new Date(`${currentYear}-${selectedMonth}-01`);
-      const endOfMonth = new Date(
-        currentYear,
-        selectedMonth,
-        0,
-        23,
-        59,
-        59,
-        999
-      );
-
-      const appointmentsCollection = collection(db, "appointments");
-      const birthRegCollection = collection(db, "birth_reg");
-      const marriageCertCollection = collection(db, "marriageCert");
-      const deathCertCollection = collection(db, "deathCert");
-      const jobCollection = collection(db, "job");
-      const businessPermitCollection = collection(db, "businessPermit");
-
-      const [
-        appointmentsSnapshot,
-        birthRegSnapshot,
-        marriageCertSnapshot,
-        deathCertSnapshot,
-        jobSnapshot,
-        businessPermitSnapshot,
-      ] = await Promise.all([
-        getDocs(
-          query(
-            appointmentsCollection,
-            where("createdAt", ">=", startOfMonth),
-            where("createdAt", "<=", endOfMonth)
-          )
-        ),
-        getDocs(
-          query(
-            birthRegCollection,
-            where("createdAt", ">=", startOfMonth),
-            where("createdAt", "<=", endOfMonth)
-          )
-        ),
-        getDocs(
-          query(
-            marriageCertCollection,
-            where("createdAt", ">=", startOfMonth),
-            where("createdAt", "<=", endOfMonth)
-          )
-        ),
-        getDocs(
-          query(
-            deathCertCollection,
-            where("createdAt", ">=", startOfMonth),
-            where("createdAt", "<=", endOfMonth)
-          )
-        ),
-        getDocs(
-          query(
-            jobCollection,
-            where("createdAt", ">=", startOfMonth),
-            where("createdAt", "<=", endOfMonth)
-          )
-        ),
-        getDocs(
-          query(
-            businessPermitCollection,
-            where("createdAt", ">=", startOfMonth),
-            where("createdAt", "<=", endOfMonth)
-          )
-        ),
-      ]);
-
-      const counts = {
-        appointments: appointmentsSnapshot.size,
-        birthRegistration: birthRegSnapshot.size,
-        marriageCertificate: marriageCertSnapshot.size,
-        deathCertificate: deathCertSnapshot.size,
-        jobApplication: jobSnapshot.size,
-        businessPermit: businessPermitSnapshot.size,
-      };
-
-      console.log("Record Counts:", counts);
-
-      setRecordCounts(counts);
-      setNoRecordsMessage(""); // Reset the message when records are fetched
-
-    } catch (error) {
-      console.error("Error fetching record counts from Firebase:", error);
-      setNoRecordsMessage("No records found for this month."); // Set the message when an error occurs or no records are found
-      // Handle error here
+  const formatTimestamp = (timestamp) => {
+    if (timestamp && timestamp.seconds) {
+      return new Date(timestamp.seconds * 1000).toLocaleDateString();
     }
+    return "Invalid Date";
   };
 
-  useEffect(() => {
-    fetchRecordCounts();
-  }, [selectedMonth]);
+  // Define table columns
+  const columns = React.useMemo(
+    () => [
+      {
+        Header: "No.", // Auto-numbering column
+        accessor: (row, index) => index + 1, // Calculate row number
+      },
+      {
+        Header: "Child Name",
+        accessor: (row) => `${row.c_fname} ${row.c_mname} ${row.c_lname}`,
+      },
+      {
+        Header: "Birth Date",
+        accessor: "birthdate",
+        Cell: ({ value }) => {
+            if (value) {
+                const date = value.toDate ? value.toDate() : value;
+                if (isValidDate(date)) {
+                    return format(date, "MMMM d, yyyy");
+                } else {
+                    return "Invalid Date";
+                }
+            } else {
+                return "N/A";
+            }
+        },
+    },
+      {
+        Header: "Residency",
+        accessor: "userBarangay",
+      },
+      {
+        Header: "Mobile No.",
+        accessor: "userContact",
+      },
+      {
+        Header: "Email",
+        accessor: "userEmail",
+      },
+      {
+        Header: "Name of Applicant",
+        accessor: "userName",
+      },
+      {
+        Header: "Date of Application",
+        accessor: "createdAt",
+        Cell: ({ value }) => {
+            if (value) {
+                const date = value.toDate ? value.toDate() : value;
+                if (isValidDate(date)) {
+                    return format(date, "MMMM d, yyyy");
+                } else {
+                    return "Invalid Date";
+                }
+            } else {
+                return "N/A";
+            }
+        },
+    },
+      {
+        Header: "Status",
+        accessor: "status",
+      },
+    ],
+    []
+  );
+
+// Filtering Dataaa
+const filteredData = data.filter((item) => {
+  const childName = item.childname?.toLowerCase();
+  const createdAt = item.createdAt?.toDate?.();
+  const formattedDate = createdAt?.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })?.toLowerCase();
+  const status = item.status?.toLowerCase();
+  const userName = item.userName?.toLowerCase();
+
+  const filterByName = !searchQuery || (childName && childName.includes(searchQuery.toLowerCase())) || (userName && userName.includes(searchQuery.toLowerCase()));
+  const filterByYear = !selectedYearFilter || (createdAt && createdAt.getFullYear().toString() === selectedYearFilter);
+  const filterByMonth = !selectedMonthFilter || (formattedDate && formattedDate.includes(selectedMonthFilter.toLowerCase()));
+  const filterByDay = !selectedDayFilter || (formattedDate && formattedDate.includes(selectedDayFilter));
+  const filterByStatus = !selectedStatusFilter || (status && status.includes(selectedStatusFilter.toLowerCase()));
+
+  return filterByName && filterByYear && filterByMonth && filterByDay && filterByStatus;
+});
+
+  // React Table configuration
+  const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } =
+    useTable({
+      columns,
+      data: filteredData,
+    });
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = rows.slice(indexOfFirstItem, indexOfLastItem);
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+  const handleYearFilterChange = (event) => {setSelectedYearFilter(event.target.value);
+  };
+
+  const handleMonthFilterChange = (event) => {setSelectedMonthFilter(event.target.value);
+  };
+
+  const handleDayFilterChange = (event) => {setSelectedDayFilter(event.target.value);
+  };
+
+  const handleStatusFilterChange = (event) => {setSelectedStatusFilter(event.target.value);
+  };
+
+  const [selectedCertificate, setSelectedCertificate] = useState("marriage");
+
+  const handleCertificateChange = (event) => {
+    setSelectedCertificate(event.target.value);
+  };
 
   return (
     <div>
@@ -765,32 +488,46 @@ function App() {
           </div>
         </div>
 
+        <div style={{textAlign: "center", marginTop: "90px"}}>
+            <h1>Service Categories</h1>
+          </div>
+
         <div className="screen">
           <div className="categories-container">
-            <Link to="/birthReg" className="link">
+            <Link to="/birthreg" className="link">
               <button className="categories1">
                 <h5>Certificate of Live Birth</h5>
               </button>
             </Link>
 
-            <Link to="/marriageCert" className="link">
-              <button className="categories1">
-                <h5>Marriage Certificate</h5>
+            <div className="dropdown">
+              <button className="categories2">
+                <h5>Certificate of Marriage</h5>
               </button>
-            </Link>
+              <div className="dropdown-content">
+                <Link to="/marriage_reg">
+                  <h5>Marriage Registration</h5>
+                </Link>
+                <Link to="/marriageCert">
+                  <h5>Request Copy</h5>
+                </Link>
+              </div>
+            </div>
 
-            <Link to="/deathCert" className="link">
-              <button className="categories1">
-                <h5>Certificate of Death Certificate</h5>
+            <div className="dropdown">
+              <button className="categories2">
+                <h5>Certificate of Death</h5>
               </button>
-            </Link>
-
-            <Link to="/businessPermit" className="link">
-              <button className="categories1">
-                <h5>Business Permit</h5>
-              </button>
-            </Link>
-
+              <div className="dropdown-content">
+                <Link to="/deathCert">
+                  <h5>Death Registration</h5>
+                </Link>
+                <Link to="/death_reg">
+                  <h5>Request Copy</h5>
+                </Link>
+              </div>
+            </div>
+            
             <Link to="/job" className="link">
               <button className="categories1">
                 <h5>Job Application</h5>
@@ -799,62 +536,358 @@ function App() {
           </div>
         </div>
 
-        <div className="reports">
-          <div className="report">
-            <div className="day">
-              <Chart
-                options={chartData.day.options}
-                series={chartData.day.series}
-                type="radialBar"
-                height="200"
-              />
-            </div>
-            <div className="week">
-              <Chart
-                options={chartData.week.options}
-                series={chartData.week.series}
-                type="radialBar"
-                height="200"
-              />
-            </div>
-            <div className="month">
-              <Chart
-                options={chartData.month.options}
-                series={chartData.month.series}
-                type="radialBar"
-                height="200"
-              />
-            </div>
-            <div className="year">
-              <Chart
-                options={chartData.year.options}
-                series={chartData.year.series}
-                type="radialBar"
-                height="200"
-              />
-            </div>
-            <div className="users-chart">
-              <Chart
-                options={chartData.users.options}
-                series={chartData.users.series}
-                type="radialBar"
-                height="200"
-              />
-            </div>
-            <div className="users-chart">
-              <Chart
-                options={chartData.webUsers.options}
-                series={chartData.webUsers.series}
-                type="radialBar"
-                height="200"
-              />
-            </div>
-          </div>
+        <h6 style={{textAlign: "center"}}>___________________________________________________________________________________________________________________________</h6>
+
+        <div style={{textAlign: "center"}}>
+          <h1>Certificate of Live Birth</h1>
         </div>
 
+        <div className="searches">
+          <FaSearch className="search-icons"></FaSearch>
+          <input
+            type="text"
+            placeholder="Search by Name"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="search-input"
+          />
+          <div className="filter-container">
+            <label>Filter:</label>
+            <select value={selectedYearFilter} onChange={handleYearFilterChange} className="filter">
+            
+              <option value="">Year</option>
+              <option value="2031">2031</option>
+              <option value="2030">2030</option>
+              <option value="2029">2029</option>
+              <option value="2028">2028</option>
+              <option value="2027">2027</option>
+              <option value="2026">2026</option>
+              <option value="2025">2025</option>
+              <option value="2024">2024</option>
+              <option value="2023">2023</option>
+            </select>
+            <select value={selectedMonthFilter} onChange={handleMonthFilterChange} className="filter">
+              <option value="">Month</option>
+              <option value="January">January</option>
+              <option value="February">February</option>
+              <option value="March">March</option>
+              <option value="April">April</option>
+              <option value="May">May</option>
+              <option value="June">June</option>
+              <option value="July">July</option>
+              <option value="August">August</option>
+              <option value="September">September</option>
+              <option value="October">October</option>
+              <option value="November">November</option>
+              <option value="December">December</option>
+            </select>
+            <select value={selectedDayFilter} onChange={handleDayFilterChange} className="filter" >
+              <option value="">Day</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+              <option value="13">13</option>
+              <option value="14">14</option>
+              <option value="15">15</option>
+              <option value="16">16</option>
+              <option value="17">17</option>
+              <option value="18">18</option>
+              <option value="19">19</option>
+              <option value="20">20</option>
+              <option value="21">21</option>
+              <option value="22">22</option>
+              <option value="23">23</option>
+              <option value="24">24</option>
+              <option value="25">25</option>
+              <option value="26">26</option>
+              <option value="27">27</option>
+              <option value="28">28</option>
+              <option value="29">29</option>
+              <option value="30">30</option>
+              <option value="31">31</option>
+            </select>
+
+            <select value={selectedStatusFilter} onChange={handleStatusFilterChange} className="filter" >
+              <option value="">Status</option>
+              <option value="Completed">Completed</option>
+              <option value="On Process">On Process</option>
+              <option value="Rejected">Rejected</option>
+              <option value="Pending">Pending</option>
+            </select>
+          </div>
+
+          <DropdownButton handleExport={handleExport} />
+
+        </div>
+
+        {isModalOpen ? ( 
+          <div className="modal">
+            <div className="modal-content">
+              <h2>Full Details</h2>
+              {selectedRow && (
+                <form>
+                  {data
+                    .filter((item) => item.id === selectedRow.original.id)
+                    .map((item) => (
+                      <div key={item.id} className="request-item">
+                        <div className="title">
+                          <h6>Birth Registration</h6>
+                          <span className="close" onClick={closeModal}>
+                            &times;
+                          </span>
+                        </div>
+                        <p>
+                          This registration form is requested by{" "}
+                          {selectedRow.values.m_name}.
+                        </p>
+
+                        {/* Child's Information */}
+                        <div className="section">
+                          <h3>Child's Information</h3>
+                          <div className="form-grid">
+                            <div className="form-group">
+                              <label>Name of Child</label>
+                              <div className="placeholder">
+                                {selectedRow.values.childname}
+                              </div>
+                            </div>
+                            <div className="form-group">
+                              <label>Birth date</label>
+                              <div className="placeholder">
+                                {selectedRow.values.c_birthdate
+                                  ? formatTimestamp(
+                                      selectedRow.values.c_birthdate
+                                    )
+                                  : "N/A"}
+                              </div>
+                            </div>
+                            <div className="form-group">
+                              <label>Birth Place</label>
+                              <div className="placeholder">
+                                {selectedRow.values.c_birthplace}
+                              </div>
+                            </div>
+                            <div className="form-group">
+                              <label>Sex</label>
+                              <div className="placeholder">{item.c_sex}</div>
+                            </div>
+                            <div className="form-group">
+                              <label>Type of Birth</label>
+                              <div className="placeholder">
+                                {item.c_typeofbirth}
+                              </div>
+                            </div>
+                            <div className="form-group">
+                              <label>Weight</label>
+                              <div className="placeholder">{item.c_weight}</div>
+                            </div>
+                            <div className="form-group">
+                              <label>Birth Order</label>
+                              <div className="placeholder">
+                                {item.c_birthorder}
+                              </div>
+                            </div>
+                            {/* Add more child fields here */}
+                          </div>
+                        </div>
+
+                        {/* Mother's Information */}
+                        <div className="section">
+                          <h3>Mother's Information</h3>
+                          <div className="form-grid">
+                            <div className="form-group">
+                              <label>Mother's Name</label>
+                              <div className="placeholder">
+                                {selectedRow.values.m_name}
+                              </div>
+                            </div>
+                            <div className="form-group">
+                              <label>Mother's Age at the time of Birth</label>
+                              <div className="placeholder">{item.m_age}</div>
+                            </div>
+                            <div className="form-group">
+                              <label>Mother's Occupation</label>
+                              <div className="placeholder">{item.m_occur}</div>
+                            </div>
+                            <div className="form-group">
+                              <label>Mother's Citizenship</label>
+                              <div className="placeholder">
+                                {item.m_citizenship}
+                              </div>
+                            </div>
+                            <div className="form-group">
+                              <label>Mother's Religion</label>
+                              <div className="placeholder">
+                                {item.m_religion}
+                              </div>
+                            </div>
+                            <div className="form-group">
+                              <label>Total Children</label>
+                              <div className="placeholder">
+                                {item.m_totchild}
+                              </div>
+                            </div>
+                            {/* Add more mother fields here */}
+                          </div>
+                        </div>
+
+                        {/* Father's Information */}
+                        <div className="section">
+                          <h3>Father's Information</h3>
+                          <div className="form-grid">
+                            <div className="form-group">
+                              <label>Father's Name</label>
+                              <div className="placeholder">
+                                {selectedRow.values.f_name}
+                              </div>
+                            </div>
+                            <div className="form-group">
+                              <label>Father's Age at the time of Birth</label>
+                              <div className="placeholder">{item.f_age}</div>
+                            </div>
+                            <div className="form-group">
+                              <label>Father's Occupation</label>
+                              <div className="placeholder">{item.f_occur}</div>
+                            </div>
+                            <div className="form-group">
+                              <label>Father's Citizenship</label>
+                              <div className="placeholder">
+                                {item.f_citizenship}
+                              </div>
+                            </div>
+                            <div className="form-group">
+                              <label>Father's Religion</label>
+                              <div className="placeholder">
+                                {item.f_religion}
+                              </div>
+                            </div>
+                            {/* Add more father fields here */}
+                          </div>
+                        </div>
+
+                        {/* Other Information */}
+                        <div className="section">
+                          <h3>Other Information</h3>
+                          <div className="form-grid">
+                            <div className="form-group">
+                              <label>Place of Marriage</label>
+                              <div className="placeholder">
+                                {item.f_placemarried}
+                              </div>
+                            </div>
+                            <div className="form-group">
+                              <label>Attendant</label>
+                              <div className="placeholder">
+                                {item.attendant}
+                              </div>
+                            </div>
+                            {/* Add more other fields here */}
+                          </div>
+                        </div>
+
+                        <div className="section">
+                          <h3>Proof of Payment</h3>
+                          <div className="proof">
+                            {item.payment ? (
+                              <img
+                                src={item.payment}
+                                alt="Proof of Payment"
+                                style={{ width: "150px", height: "300px" }}
+                              />
+                            ) : (
+                              <p>No payment proof available</p>
+                            )}
+                          </div>
+                          <div className="form-group">
+                            <label>Status of Appointment</label>
+                            <div className="placeholder">
+                              {selectedRow.values.status}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </form>
+              )}
+            </div>
+          </div>
+        ) : (
+          <Table
+            striped
+            bordered
+            hover
+            {...getTableProps()}
+            className="custom-table"
+          >
+            <thead>
+              {headerGroups.map((headerGroup) => (
+                <tr {...headerGroup.getHeaderGroupProps()}>
+                  {headerGroup.headers.map((column) => (
+                    <th {...column.getHeaderProps()}>
+                      {column.render("Header")}
+                    </th>
+                  ))}
+                </tr>
+              ))}
+            </thead>
+            <tbody {...getTableBodyProps()}>
+              {currentItems.map((row) => {
+                prepareRow(row);
+                return (
+                  <tr {...row.getRowProps()}>
+                    {row.cells.map((cell) => (
+                      <td {...cell.getCellProps()}>{cell.render("Cell")}</td>
+                    ))}
+                  </tr>
+                );
+              })}
+              {filteredData.length === 0 && (
+                <tr>
+                  <td colSpan="9" style={{ textAlign: "center" }}>
+                    No matching records found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </Table>
+        )}
+
+        <Pagination>
+          {[...Array(Math.ceil(rows.length / itemsPerPage)).keys()].map(
+            (number) => (
+              <Pagination.Item
+                key={number + 1}
+                active={number + 1 === currentPage}
+                onClick={() => paginate(number + 1)}
+              >
+                {number + 1}
+              </Pagination.Item>
+            )
+          )}
+        </Pagination>
       </div>
     </div>
   );
 }
+
+const DropdownButton = ({ handleExport }) => (
+  <div className="dropdown">
+    <button className="dropbtn">Export File</button>
+    <div className="dropdown-content">
+      <button onClick={() => handleExport("pdf")}>Export as PDF</button>
+      <button onClick={() => handleExport("csv")}>Export as CSV</button>
+      {/* Add more buttons for other export types */}
+    </div>
+  </div>
+);
 
 export default App;

@@ -149,6 +149,7 @@
 /* Style the input field to give space for the icon */
 input[type="email"],
 input[type="password"],
+.form-control,
 select {
   padding-left: 40px; /* Adjust the left padding to make space for the icon */
   border: #307a59 1.4px solid;
