@@ -19,6 +19,8 @@ import DeathReg from "./pages/death_reg";
 import Death from "./pages/deathCert";
 import Job from "./pages/job";
 import Analytics from "./pages/analytics"
+import Terms from "./pages/terms"
+
 
 const Layout = () => {
   return (
@@ -42,6 +44,7 @@ const Layout = () => {
             <Route path="/deathCert" component={Death} />
             <Route path="/job" component={Job} />
             <Route path="/analytics" component={Analytics} />
+            <Route path="/terms" component={Terms} />
 
           </Switch>
         </MainContent>

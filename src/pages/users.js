@@ -348,21 +348,37 @@ function App() {
       alert("Please enter a valid email address.");
       return;
     }
-
+  
     try {
-      const docRef = await addDoc(collection(firestore, "web_users"), newUser);
+      // Add user to Firebase Authentication
+      const auth = getAuth();
+      const { user } = await createUserWithEmailAndPassword(auth, newUser.email, newUser.storedPassword);
+      
+      // Add user to web_users collection in Firestore
+      const docRef = await addDoc(collection(firestore, "web_users"), {
+        email: newUser.email,
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
+        department: newUser.department
+      });
+  
       const newUserWithId = { id: docRef.id, ...newUser };
-
-      setLocalData((prevData) => [...prevData, newUserWithId]);
-
-      const storedPassword = generatePassword();
-      sendPassword(newUser.email, storedPassword);
-
+  
+      // Update local data
+      setLocalWebUserData((prevData) => [...prevData, newUserWithId]);
+      setWebUserData((prevData) => [...prevData, newUserWithId]);
+  
+      // Send email with password
+      alert(`User added successfully. Password generated and sent to ${newUser.email}.`);
+  
+      // Close modal
       setShowModal(false);
     } catch (error) {
       console.error("Error adding user: ", error);
+      alert("Failed to add user. Please try again later.");
     }
   };
+  
 
   const isValidEmail = (email) => {
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

@@ -1,16 +1,14 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Switch, Redirect } from 'react-router-dom';
-import Signup from './pages/signup';
+import { BrowserRouter as Router, Route, Redirect } from 'react-router-dom';
+
 import Login from './pages/login';
-import Dashboard from "./pages/dashboard";
 
 function App() {
   return (
     <Router>
-      <Switch>
-        <Route exact path="/signup" component={Signup} />
-        <Route exact path="/login" component={Login} />
-      </Switch>
+      <Route exact path="/">
+        <Redirect to="/login" component={Login} />
+      </Route>
     </Router>
   );
 }

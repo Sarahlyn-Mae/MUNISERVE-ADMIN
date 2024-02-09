@@ -106,6 +106,7 @@ const Sidebar = () => {
   const location = useLocation();
   const history = useHistory();
   const [activeMenu, setActiveMenu] = useState('');
+  const [isVisible, setIsVisible] = useState(true); // State to control sidebar visibility
 
   useEffect(() => {
     const currentPath = location.pathname;
@@ -113,14 +114,12 @@ const Sidebar = () => {
   }, [location]);
 
   const handleLogout = () => {
-    // Perform logout logic (e.g., sign out from authentication)
-    // After successful logout, navigate to the login page
-    // Replace '/login' with the actual path of your login page
-    history.push('/login');
+    setIsVisible(false); // Hide sidebar
+    history.push('/login'); // Navigate to login page
   };
 
   return (
-    <SidebarContainer>
+    <SidebarContainer isVisible={isVisible}>
       <SidebarHeader>
         <SidebarLogo src={logo} alt="Logo" />
         <SidebarTitle>
@@ -178,15 +177,15 @@ const Sidebar = () => {
       </SidebarMenu>
 
       <BottomMenuItems>
-      <Link to="/settings" className="link">
-        <SidebarMenuItem
-          onClick={() => setActiveMenu('/settings')}
-          isActive={activeMenu === '/settings'}
-        >
-          <FontAwesomeIcon icon={faGear} className="icon" />
-          Settings
-        </SidebarMenuItem>
-      </Link>
+        <Link to="/settings" className="link">
+          <SidebarMenuItem
+            onClick={() => setActiveMenu('/settings')}
+            isActive={activeMenu === '/settings'}
+          >
+            <FontAwesomeIcon icon={faGear} className="icon" />
+            Settings
+          </SidebarMenuItem>
+        </Link>
 
         <SidebarMenuItem onClick={handleLogout} isActive={activeMenu === '/logout'}>
           <FontAwesomeIcon icon={faArrowRightFromBracket} className="icon" />

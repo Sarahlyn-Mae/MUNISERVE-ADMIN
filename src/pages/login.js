@@ -3,22 +3,22 @@ import slider1 from "../assets/slider1.png";
 import slider2 from "../assets/slider2.png";
 import slider3 from "../assets/slider3.png";
 import "../styles/style.css";
-import { FaEnvelope, FaLock } from "react-icons/fa"; // Import icons
+import { FaEnvelope, FaLock } from "react-icons/fa";
 import React, { useState, useEffect } from "react";
-import { useHistory, Link, Redirect } from "react-router-dom";
+import { useHistory, Link } from "react-router-dom";
 import { signInWithEmailAndPassword, getAuth } from "firebase/auth";
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, collection, getDocs } from "firebase/firestore";
 
 // Firebase configuration
 const firebaseConfig = {
-    apiKey: "AIzaSyAsIqHHA8727cGeTjr0dUQQmttqJ2nW_IE",
-    authDomain: "muniserve-4dc11.firebaseapp.com",
-    projectId: "muniserve-4dc11",
-    storageBucket: "muniserve-4dc11.appspot.com",
-    messagingSenderId: "874813480248",
-    appId: "1:874813480248:web:edd1ff1f128b5bb4a2b5cd",
-    measurementId: "G-LS66HXR3GT"
+  apiKey: "AIzaSyAsIqHHA8727cGeTjr0dUQQmttqJ2nW_IE",
+  authDomain: "muniserve-4dc11.firebaseapp.com",
+  projectId: "muniserve-4dc11",
+  storageBucket: "muniserve-4dc11.appspot.com",
+  messagingSenderId: "874813480248",
+  appId: "1:874813480248:web:edd1ff1f128b5bb4a2b5cd",
+  measurementId: "G-LS66HXR3GT",
 };
 
 // Initialize Firebase
@@ -60,6 +60,26 @@ function Login() {
     };
   }, [currentImage, images]);
 
+  useEffect(() => {
+    const checkUser = async () => {
+      try {
+        const usersRef = collection(firestore, "admin_users");
+        const querySnapshot = await getDocs(usersRef);
+        const users = querySnapshot.docs.map((doc) => doc.data());
+        const userExists = users.some((user) => user.email === email);
+        if (!userExists) {
+          setError("Invalid email or password");
+        }
+      } catch (error) {
+        console.error("Error checking user: ", error);
+      }
+    };
+
+    if (email !== "") {
+      checkUser();
+    }
+  }, [email, firestore]);
+
   return (
     <div className="App">
       <div className="App-slider">
@@ -90,7 +110,7 @@ function Login() {
             <div className="icon-input">
               <FaEnvelope className="input-icons" style={{ marginLeft: '3px'}}/>
               <input
-               className="input-email"
+                className="input-email"
                 type="email"
                 placeholder="Enter your email"
                 value={email}
@@ -118,9 +138,8 @@ function Login() {
           </form>
           
           <div className="forgot-password">
-      <Link to="/forgot-password">Forgot Password?</Link>
-    </div>
-        
+            <Link to="/forgot-password">Forgot Password?</Link>
+          </div>
         </div>
       </div>
     </div>

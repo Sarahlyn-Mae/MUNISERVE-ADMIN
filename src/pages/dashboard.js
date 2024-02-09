@@ -41,6 +41,7 @@ const firestore = getFirestore(app);
 
 const Dashboard = ({ count }) => {
   const [monthlyData, setMonthlyData] = useState([]);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   useEffect(() => {
     fetchMonthlyData();
@@ -280,6 +281,7 @@ const Dashboard = ({ count }) => {
 
     fetchStatusCounts();
   }, []);
+
 
   return (
     <main className="main-csontainer">
