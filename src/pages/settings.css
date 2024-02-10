@@ -1,3 +1,5 @@
+
+
 .profile-image {
   border-radius: 50%;
   width: 80px; /* Set the desired width */
@@ -259,4 +261,12 @@ form {
 /* Other content */
 .content {
   margin-top: 20px;
+}
+
+.employee {
+  width: 1200px;
+  height: 600px;
+  top: 40px;
+  margin-left: auto;
+  margin-right: auto;
 }

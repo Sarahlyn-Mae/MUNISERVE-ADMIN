@@ -1,282 +1,311 @@
 .sidebar {
-    position: fixed;
-    height: 100%;
-    top: 0;
-    left: 0;
-    overflow-y: auto;
-    z-index: 2; /* Set a higher z-index value for the sidebar */
+  position: fixed;
+  height: 100%;
+  top: 0;
+  left: 0;
+  overflow-y: auto;
+  z-index: 2; /* Set a higher z-index value for the sidebar */
 }
 
-.container {
-    font-family: Arial, sans-serif;
-    margin-left: 190px;
-    width: 100%;
-    padding: 10px;
-    position: relative; /* Add relative positioning for stacking context */
-    z-index: 1; /* Set a lower z-index value for the container */
+.contain {
+  font-family: Arial, sans-serif;
+  margin-left: 185px;
+  width: 100%;
+  padding: 10px;
+  position: relative; /* Add relative positioning for stacking context */
+  z-index: 1; /* Set a lower z-index value for the container */
 }
 
 .header {
-    font-size: 30px;
-    font-weight: bold;
-    margin-top: 0;
-    margin-left: 40px;
-    display: flex;
-    align-items: center;
-    position: fixed;
-    top: 0;
-    width: 100%;
-    height: 80px;
-    background-color: #fff;
-    z-index: 1; /* Set a lower z-index value for the header */
-    box-shadow: 0px 5px 10px 0px rgba(0, 0, 0, 0.1); /* Add bottom shadow */
+  font-size: 30px;
+  font-weight: bold;
+  margin-top: 0;
+  margin-left: 10px;
+  display: flex;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  width: 100%;
+  height: 80px;
+  background-color: #fff;
+  z-index: 1; /* Set a lower z-index value for the header */
+  box-shadow: 0px 5px 10px 0px rgba(0, 0, 0, 0.1); /* Add bottom shadow */
 }
 
 .header h1 {
-    font-size: 30px;
-    font-weight: bold;
-    margin-top: 2px;
-    margin-left: 30px;
-    display: flex;
-    align-items: center;
+  font-size: 30px;
+  font-weight: bold;
+  margin-top: 2px;
+  margin-left: 30px;
+  display: flex;
+  align-items: center;
 }
 
 .icons {
-    flex-direction: row;
-    display: flex;
-    margin-top: 20px;
+  flex-direction: row;
+  display: flex;
+  margin-top: 20px;
 }
 
 .notifs {
-    width: 30px;
-    height: 30px;
-    margin-left: 10px;
-    cursor: pointer;
+  width: 30px;
+  height: 30px;
+  margin-left: 10px;
+  cursor: pointer;
 }
 
 .account-img {
-    width: 32px;
-    height: 32px;
-    margin-left: 20px;
-    cursor: pointer;
-    position: relative;
-    z-index: 2;
-    border: 1px gray solid;
-    border-radius: 50px;
+  width: 32px;
+  height: 32px;
+  margin-left: 20px;
+  cursor: pointer;
+  position: relative;
+  z-index: 2;
+  border: 1px gray solid;
+  border-radius: 50px;
 }
 
 .account-names {
-    background-color: #307A59;
-    width: 140px;
-    height: 33px;
-    text-align: center;
-    border-radius: 50px;
-    display: flex;
-    justify-content: center; /* Center the content horizontally */
-    align-items: center; /* Center the content vertically */
-    margin-left: -20px;
-    position: relative;
-    z-index: 1;
+  background-color: #307A59;
+  width: 140px;
+  height: 33px;
+  text-align: center;
+  border-radius: 50px;
+  display: flex;
+  justify-content: center; /* Center the content horizontally */
+  align-items: center; /* Center the content vertically */
+  margin-left: -20px;
+  position: relative;
+  z-index: 1;
 }
 
 .account-names h2 {
-    margin: 0; 
-    font-size: 14px;
-    font-weight: 400;
-    color: #fff;
+  margin: 0; 
+  font-size: 14px;
+  font-weight: 400;
+  color: #fff;
 }
 
 body {
-  overflow-x: hidden;
+overflow-x: hidden;
 }
 
 
 .main-title h1 {
-    margin-left: 8px;
+  margin-left: 8px;
 }
 
 .mainbox {
-    display: grid;
-    grid-template-columns: 2fr 2fr 2fr 2fr 2fr;
-    gap: 10px;
-    margin-top: 90px;
-    margin-left: 60px;
+  display: flex;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 15px;
+  margin-top: 90px;
+  margin-left: 90px;
 }
 
 .card-inner h3 {
-    font-size: 20px;
-    font-weight: bold;
-    margin-top: -75px;
+  font-size: 20px;
+  font-weight: bold;
+  margin-top: -75px;
 }
 
 h2 {
-    font-size: 20px;
+  font-size: 20px;
 }
 
 .total {
-    background-color: #FDFF92;
-    display: flex;
-    flex-direction: column;
-    padding: 5px 10px;
-    border-radius: 25px;
-    width: 300px;
-    margin: 7px;
-    font-size: small;
-    height: 130px;
+  background-color: #FDFF92;
+  display: flex;
+  flex-direction: column;
+  padding: 5px 10px;
+  border-radius: 25px;
+  width: 200px;
+  margin: 7px;
+  font-size: small;
+  height: 130px;
+}
+
+.total h3 {
+  margin-top: -30px;
 }
 
 .card-inner p {
-    font-size: 27px;
-    font-weight: bold;
-    margin-top: 85px;
-    margin-left: -20px;
+  font-size: 27px;
+  font-weight: bold;
+  margin-top: 85px;
+  margin-left: -20px;
 }
 
 /*Pending*/
 .pending {
-    background-color: #FFA0A0;
-    display: flex;
-    flex-direction: column;
-    padding: 5px 10px;
-    border-radius: 25px;
-    width: 230px;
-    margin: 7px;
-    font-size: medium;
-    height: 130px;
+  background-color: #FFA0A0;
+  display: flex;
+  flex-direction: column;
+  padding: 5px 10px;
+  border-radius: 25px;
+  width: 180px;
+  margin: 7px;
+  font-size: medium;
+  height: 130px;
+}
+
+.on-process {
+  background-color: #b8a0ff;
+  display: flex;
+  flex-direction: column;
+  padding: 5px 10px;
+  border-radius: 25px;
+  width: 180px;
+  margin: 7px;
+  font-size: medium;
+  height: 130px;
 }
 
 /*Completed*/
 .complete {
-    background-color: #94B1FB;
-    display: flex;
-    flex-direction: column;
-    padding: 5px 10px;
-    border-radius: 25px;
-    width: 240px;
-    margin: 7px;
-    font-size: medium;
-    height: 130px;
+  background-color: #94B1FB;
+  display: flex;
+  flex-direction: column;
+  padding: 5px 10px;
+  border-radius: 25px;
+  width: 180px;
+  margin: 7px;
+  font-size: medium;
+  height: 130px;
 }
 
 /*Disapproved*/
 .disapproved {
-    background-color: #94FB98;
-    display: flex;
-    flex-direction: column;
-    padding: 5px 10px;
-    border-radius: 25px;
-    width: 250px;
-    margin: 7px;
-    font-size: medium;
-    height: 130px;
+  background-color: #94FB98;
+  display: flex;
+  flex-direction: column;
+  padding: 5px 10px;
+  border-radius: 25px;
+  width: 200px;
+  margin: 7px;
+  font-size: medium;
+  height: 130px;
 }
 
 .approved {
-    background-color: #d98fe9;
-    display: flex;
-    flex-direction: column;
-    padding: 5px 10px;
-    border-radius: 25px;
-    width: 230px;
-    margin: 7px;
-    font-size: medium;
-    height: 130px;
+  background-color: #d98fe9;
+  display: flex;
+  flex-direction: column;
+  padding: 5px 10px;
+  border-radius: 25px;
+  width: 200px;
+  margin: 7px;
+  font-size: medium;
+  height: 130px;
 }
 
 .card-inner {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .total_icon {
-    font-size: 65px;
-    color: black;
-    margin-bottom: 10px;
-    margin-top: -70px;
-    margin-left: -20px;
+  font-size: 65px;
+  color: black;
+  margin-bottom: 10px;
+  margin-top: -70px;
+  margin-left: auto;
+  width: 40px;
+  height: 40px;
 }
 .pending_icon {
-    font-size: 45px;
-    color: black;
-    margin-left: 65px;
-    margin-bottom: 10px;
-    margin-top: -70px;
+  font-size: 45px;
+  color: black;
+  margin-left: auto;
+  margin-bottom: 10px;
+  margin-top: -70px;
+  width: 40px;
+  height: 40px;
 }
+
 .complete_icon {
-    font-size: 45px;
-    color: black;
-    margin-left: 65px;
-    margin-bottom: 10px;
-    margin-top: -70px;
+  font-size: 45px;
+  color: black;
+  margin-bottom: 10px;
+  margin-top: -70px;
+  width: 40px;
+  height: 40px;
+  margin-left: auto;
 }
+
 .dis_icon {
-    font-size: 45px;
-    color: black;
-    margin-left: 65px;
-    margin-bottom: 10px;
-    margin-top: -70px;
+  font-size: 45px;
+  color: black;
+  margin-bottom: 10px;
+  margin-top: -70px;
+  width: 40px;
+  height: 40px;
+  margin-left: auto;
 }
+
 .app_icon {
-    font-size: 45px;
-    color: black;
-    margin-left: 65px;
-    margin-bottom: 10px;
-    margin-top: -70px;
+  font-size: 45px;
+  color: black;
+  margin-bottom: 10px;
+  margin-top: -70px;
+  width: 40px;
+  height: 40px;
+  margin-left: auto;
 }
 
 .chart,
 .charts {
-    display: flex;
-    grid-template-columns: 1fr 1fr;
-    gap: 190px; /* Adjust the gap between charts as needed */
-    margin-top: 10px;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    margin-left: -20px;
+  display: flex;
+  grid-template-columns: 1fr 1fr;
+  gap: 120px; /* Adjust the gap between charts as needed */
+  margin-top: 10px;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  margin-left: -150px;
 }
 
 .col-4 {
-    margin: 10px;
-    width: 40%; /* Adjust the width as needed */
+  margin: 10px;
+  width: 40%; /* Adjust the width as needed */
 }
 
 .monthly-chart h6,
 .col-4 h6 {
-    font-size: 15px;
-    font-weight: bold;
-    text-align: center;
+  font-size: 15px;
+  font-weight: bold;
+  text-align: center;
 }
 
 /* Optional: Adjust the width for smaller screens */
 @media (max-width: 768px) {
-    .col-4 {
-        width: 100%;
-    }
+  .col-4 {
+      width: 100%;
+  }
 }
 
 .date-picker {
-    margin-left: 60px;
-    margin-top: 30px;
-    margin-bottom: 5px;
+  margin-left: 60px;
+  margin-top: 30px;
+  margin-bottom: 5px;
 }
 
 footer {
-    width: 100%;
-    height: 50px;
-    background-color: #1e7566;
-    color: #fff;
-    bottom: 0;
-    text-align: center;
-    justify-content: center;
-    align-items: center;
-    margin: 0;
+  width: 100%;
+  height: 50px;
+  background-color: #1e7566;
+  color: #fff;
+  bottom: 0;
+  text-align: center;
+  justify-content: center;
+  align-items: center;
+  margin: 0;
 }
 
 footer h3 {
-    text-align: center;
-    justify-content: center;
-    align-items: center;
-    color: #fff;
+  text-align: center;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
 }

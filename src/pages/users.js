@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { initializeApp } from "firebase/app";
+import { getAuth, createUserWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import {
   getFirestore,
   collection,
@@ -20,7 +21,7 @@ import notification from "../assets/icons/Notification.png";
 import logo from "../assets/logo.png";
 import "bootstrap/dist/css/bootstrap.min.css";
 import jsPDF from "jspdf";
-import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
+import useAuth from "../components/useAuth";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -47,6 +48,23 @@ function App() {
   const [userToDelete, setUserToDelete] = useState(null);
   const [isAddYearModalOpen, setIsAddYearModalOpen] = useState(false);
   const [newYear, setNewYear] = useState("");
+
+   //Function for the account name
+   const { user } = useAuth();
+   const [userEmail, setUserEmail] = useState("");
+ 
+   useEffect(() => {
+     const fetchUserEmail = () => {
+       if (user) {
+         const email = user.email;
+         const truncatedEmail =
+           email.length > 9 ? `${email.substring(0, 9)}..` : email;
+         setUserEmail(truncatedEmail);
+       }
+     };
+ 
+     fetchUserEmail();
+   }, [user]);
 
   // Function to fetch data from Firestore
   const fetchData = async () => {
@@ -350,10 +368,13 @@ function App() {
     }
   
     try {
-      // Add user to Firebase Authentication
+      // Generate a random password
+      const generatedPassword = generatePassword();
+  
+      // Add user to Firebase Authentication with the generated password
       const auth = getAuth();
-      const { user } = await createUserWithEmailAndPassword(auth, newUser.email, newUser.storedPassword);
-      
+      await createUserWithEmailAndPassword(auth, newUser.email, generatedPassword);
+  
       // Add user to web_users collection in Firestore
       const docRef = await addDoc(collection(firestore, "web_users"), {
         email: newUser.email,
@@ -368,18 +389,19 @@ function App() {
       setLocalWebUserData((prevData) => [...prevData, newUserWithId]);
       setWebUserData((prevData) => [...prevData, newUserWithId]);
   
-      // Send email with password
-      alert(`User added successfully. Password generated and sent to ${newUser.email}.`);
+      // Send email with the generated password
+      await sendPasswordResetEmail(auth, newUser.email);
   
       // Close modal
       setShowModal(false);
+  
+      alert(`User added successfully. Password generated and sent to ${newUser.email}.`);
     } catch (error) {
       console.error("Error adding user: ", error);
       alert("Failed to add user. Please try again later.");
     }
   };
   
-
   const isValidEmail = (email) => {
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailPattern.test(email);
@@ -453,16 +475,18 @@ function App() {
         <Sidebar />
       </div>
       <div className="container">
-        <div className="header">
+        <div className="headers">
           <div className="icons">
-            <h1>Users</h1>
-            <img src={notification} alt="Notification.png" className="notifs" />
+            <div style={{marginTop: "-20px"}}><h1>Users</h1></div>
+            
+            <img src={notification} alt="Notification.png" className="notif" />
             <img src={logo} alt="logo" className="account-img" />
-            <div className="account-name">
-              <h1>Admin</h1>
+            <div className="account-names">
+              <h2>{userEmail}</h2>
             </div>
           </div>
         </div>
+
 
         <div style={{ marginTop: "90px" }}>
           <h2>Mobile Users</h2>
@@ -475,7 +499,7 @@ function App() {
             placeholder="Search by Name"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="search-input"
+            className="search-inputss"
           />
 
           <div className="filter-containers">
@@ -633,17 +657,6 @@ function App() {
                   className="form-control"
                 />
               </Form.Group>
-              <Form.Group controlId="password">
-                <Form.Label>Password</Form.Label>
-                <Form.Control
-                  type="password"
-                  placeholder="Enter password"
-                  value={newUser.storedPassword}
-                  onChange={(e) =>
-                    setNewUser({ ...newUser, storedPassword: e.target.value })
-                  }
-                />
-              </Form.Group>
             </Form>
           </Modal.Body>
           <Modal.Footer>
@@ -690,7 +703,7 @@ function App() {
               placeholder="Search by Name"
               value={webUserSearchQuery}
               onChange={handleWebUsersSearch}
-              className="search-input"
+              className="search-inputsss"
             />
 
             <div className="filter-containers">
@@ -742,6 +755,7 @@ function App() {
                   <td>{user.department}</td>
                   <td>
                     <Button
+                      className="add"
                       variant="danger"
                       onClick={() => handleDeleteUser(user.email)}
                     >

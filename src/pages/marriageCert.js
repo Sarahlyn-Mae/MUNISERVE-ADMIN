@@ -14,6 +14,8 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import jsPDF from "jspdf";
 import { format } from "date-fns";
 import { enUS } from "date-fns/locale";
+import useAuth from "../components/useAuth";
+
 
 // Firebase configuration
 const firebaseConfig = {
@@ -457,6 +459,23 @@ function App() {
     setSelectedStatusFilter(event.target.value);
   };
 
+  //Function for the account name
+  const { user } = useAuth();
+  const [userEmail, setUserEmail] = useState("");
+
+  useEffect(() => {
+    const fetchUserEmail = () => {
+      if (user) {
+        const email = user.email;
+        const truncatedEmail =
+          email.length > 9 ? `${email.substring(0, 9)}..` : email;
+        setUserEmail(truncatedEmail);
+      }
+    };
+
+    fetchUserEmail();
+  }, [user]);
+
   return (
     <div>
       <div className="sidebar">
@@ -464,13 +483,14 @@ function App() {
       </div>
 
       <div className="container">
-        <div className="header">
+      <div className="headers">
           <div className="icons">
-            <h1>Transactions</h1>
+            <div style={{marginTop: "-20px"}}><h1>Transactions</h1></div>
+            
             <img src={notification} alt="Notification.png" className="notif" />
             <img src={logo} alt="logo" className="account-img" />
-            <div className="account-name">
-              <h1>Admin</h1>
+            <div className="account-names">
+              <h2>{userEmail}</h2>
             </div>
           </div>
         </div>
@@ -488,7 +508,7 @@ function App() {
             </Link>
 
             <div className="dropdown">
-              <button className="categories2">
+              <button className="categories5">
                 <h5>Certificate of Marriage</h5>
               </button>
               <div className="dropdown-content">
@@ -502,7 +522,7 @@ function App() {
             </div>
 
             <div className="dropdown">
-              <button className="categories2">
+              <button className="categories4">
                 <h5>Certificate of Death</h5>
               </button>
               <div className="dropdown-content">
@@ -516,15 +536,14 @@ function App() {
             </div>
             
             <Link to="/job" className="link">
-              <button className="categories1">
+              <button className="categories2">
                 <h5>Job Application</h5>
               </button>
             </Link>
           </div>
         </div>
 
-          <h6 style={{textAlign: "center"}}>___________________________________________________________________________________________________________________________</h6>
-
+        <h6>________________________________________________________________________</h6>
           <div style={{textAlign: "center"}}>
             <h1>Request Copy of Marriage Certificate</h1>
           </div>

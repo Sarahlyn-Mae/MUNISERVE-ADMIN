@@ -15,7 +15,7 @@ import { format } from "date-fns";
 import { enUS } from "date-fns/locale";
 import { Table, Pagination } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
-
+import useAuth from "../components/useAuth";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -99,12 +99,12 @@ function App() {
         Header: "No.", // Auto-numbering column
       },
       {
-        Header: "Name",
-        accessor: "userName",
+        Header: "Child Name",
+        accessor: (row) => `${row.c_fname} ${row.c_mname} ${row.c_lname}`,
       },
       {
-        Header: "Service Type",
-        accessor: "collectionType",
+        Header: "Name",
+        accessor: "userName",
       },
       {
         Header: "Residency",
@@ -227,22 +227,6 @@ const exportDataAsCSV = () => {
       {
         Header: "Child Name",
         accessor: (row) => `${row.c_fname} ${row.c_mname} ${row.c_lname}`,
-      },
-      {
-        Header: "Birth Date",
-        accessor: "birthdate",
-        Cell: ({ value }) => {
-          if (value) {
-              const date = value.toDate ? value.toDate() : value;
-              if (isValidDate(date)) {
-                  return format(date, "MMMM d, yyyy");
-              } else {
-                  return "Invalid Date";
-              }
-          } else {
-              return "N/A";
-          }
-      },
       },
       {
         Header: "Residency",
@@ -488,6 +472,23 @@ const filteredData = data.filter((item) => {
     setSelectedCertificate(event.target.value);
   };
 
+  //Function for the account name
+  const { user } = useAuth();
+  const [userEmail, setUserEmail] = useState("");
+
+  useEffect(() => {
+    const fetchUserEmail = () => {
+      if (user) {
+        const email = user.email;
+        const truncatedEmail =
+          email.length > 9 ? `${email.substring(0, 9)}..` : email;
+        setUserEmail(truncatedEmail);
+      }
+    };
+
+    fetchUserEmail();
+  }, [user]);
+
   return (
     <div>
       <div className="sidebar">
@@ -495,13 +496,14 @@ const filteredData = data.filter((item) => {
       </div>
 
       <div className="container">
-        <div className="header">
+        <div className="headers">
           <div className="icons">
-            <h1>Transactions</h1>
+            <div style={{marginTop: "-20px"}}><h1>Transactions</h1></div>
+            
             <img src={notification} alt="Notification.png" className="notif" />
             <img src={logo} alt="logo" className="account-img" />
-            <div className="account-name">
-              <h1>Admin</h1>
+            <div className="account-names">
+              <h2>{userEmail}</h2>
             </div>
           </div>
         </div>
@@ -519,7 +521,7 @@ const filteredData = data.filter((item) => {
             </Link>
 
             <div className="dropdown">
-              <button className="categories2">
+              <button className="categories5">
                 <h5>Certificate of Marriage</h5>
               </button>
               <div className="dropdown-content">
@@ -533,7 +535,7 @@ const filteredData = data.filter((item) => {
             </div>
 
             <div className="dropdown">
-              <button className="categories2">
+              <button className="categories4">
                 <h5>Certificate of Death</h5>
               </button>
               <div className="dropdown-content">
@@ -547,15 +549,14 @@ const filteredData = data.filter((item) => {
             </div>
             
             <Link to="/job" className="link">
-              <button className="categories1">
+              <button className="categories2">
                 <h5>Job Application</h5>
               </button>
             </Link>
           </div>
         </div>
 
-        <h6 style={{textAlign: "center"}}>___________________________________________________________________________________________________________________________</h6>
-
+        <h6>________________________________________________________________________</h6>
         <div style={{textAlign: "center"}}>
           <h1>Certificate of Live Birth</h1>
         </div>
@@ -572,15 +573,7 @@ const filteredData = data.filter((item) => {
           <div className="filter-container">
             <label>Filter:</label>
             <select value={selectedYearFilter} onChange={handleYearFilterChange} className="filter">
-            
               <option value="">Year</option>
-              <option value="2031">2031</option>
-              <option value="2030">2030</option>
-              <option value="2029">2029</option>
-              <option value="2028">2028</option>
-              <option value="2027">2027</option>
-              <option value="2026">2026</option>
-              <option value="2025">2025</option>
               <option value="2024">2024</option>
               <option value="2023">2023</option>
             </select>
@@ -891,7 +884,6 @@ const DropdownButton = ({ handleExport }) => (
     <div className="dropdown-content">
       <button onClick={() => handleExport("pdf")}>Export as PDF</button>
       <button onClick={() => handleExport("csv")}>Export as CSV</button>
-      {/* Add more buttons for other export types */}
     </div>
   </div>
 );

@@ -92,27 +92,11 @@ function App() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [noRecordsMessage, setNoRecordsMessage] = useState("");
 
-  const { user } = useAuth();
-  const [userEmail, setUserEmail] = useState("");
-
   const [selectedFilter, setSelectedFilter] = useState({
     barangay: null,
     year: new Date().getFullYear(),
     serviceType: null,
   });
-
-  useEffect(() => {
-    const fetchUserEmail = () => {
-      if (user) {
-        const email = user.email;
-        const truncatedEmail =
-          email.length > 7 ? `${email.substring(0, 7)}...` : email;
-        setUserEmail(truncatedEmail);
-      }
-    };
-
-    fetchUserEmail();
-  }, [user]);
 
   useEffect(() => {
     fetchMonthlyData();
@@ -229,6 +213,16 @@ function App() {
     const collectionQueries = [
       query(
         collection(db, "birth_reg"),
+        where("createdAt", ">", Timestamp.fromDate(new Date("2023-01-01"))),
+        where("createdAt", "<", Timestamp.fromDate(new Date("2023-12-31")))
+      ),
+      query(
+        collection(db, "marriage_reg"),
+        where("createdAt", ">", Timestamp.fromDate(new Date("2023-01-01"))),
+        where("createdAt", "<", Timestamp.fromDate(new Date("2023-12-31")))
+      ),
+      query(
+        collection(db, "death_reg"),
         where("createdAt", ">", Timestamp.fromDate(new Date("2023-01-01"))),
         where("createdAt", "<", Timestamp.fromDate(new Date("2023-12-31")))
       ),
@@ -992,6 +986,8 @@ function App() {
 
       const appointmentsCollection = collection(db, "appointments");
       const birthRegCollection = collection(db, "birth_reg");
+      const marriageRegCollection = collection(db, "marriage_reg");
+      const deathRegCollection = collection(db, "death_reg");
       const marriageCertCollection = collection(db, "marriageCert");
       const deathCertCollection = collection(db, "deathCert");
       const jobCollection = collection(db, "job");
@@ -999,6 +995,8 @@ function App() {
       const [
         appointmentsSnapshot,
         birthRegSnapshot,
+        marriageRegSnapshot,
+        deathRegSnapshot,
         marriageCertSnapshot,
         deathCertSnapshot,
         jobSnapshot,
@@ -1013,6 +1011,20 @@ function App() {
         getDocs(
           query(
             birthRegCollection,
+            where("createdAt", ">=", startOfMonth),
+            where("createdAt", "<=", endOfMonth)
+          )
+        ),
+        getDocs(
+          query(
+            marriageRegCollection,
+            where("createdAt", ">=", startOfMonth),
+            where("createdAt", "<=", endOfMonth)
+          )
+        ),
+        getDocs(
+          query(
+            deathRegCollection,
             where("createdAt", ">=", startOfMonth),
             where("createdAt", "<=", endOfMonth)
           )
@@ -1043,6 +1055,8 @@ function App() {
       const counts = {
         appointments: appointmentsSnapshot.size,
         birthRegistration: birthRegSnapshot.size,
+        marriageRegistration: marriageRegSnapshot.size,
+        deathRegistration: deathRegSnapshot.size,
         marriageCertificate: marriageCertSnapshot.size,
         deathCertificate: deathCertSnapshot.size,
         jobApplication: jobSnapshot.size,
@@ -1172,6 +1186,23 @@ function App() {
     findHighestAndLowestTransactions();
   }, [yearlyDataForBarangay]);
 
+  //Function for the account name
+ const { user } = useAuth();
+ const [userEmail, setUserEmail] = useState("");
+
+ useEffect(() => {
+   const fetchUserEmail = () => {
+     if (user) {
+       const email = user.email;
+       const truncatedEmail =
+         email.length > 9 ? `${email.substring(0, 9)}..` : email;
+       setUserEmail(truncatedEmail);
+     }
+   };
+
+   fetchUserEmail();
+ }, [user]);
+
   return (
     <div>
       <div className="sidebar">
@@ -1179,13 +1210,14 @@ function App() {
       </div>
 
       <div className="container">
-        <div className="header">
+        <div className="headers">
           <div className="icons">
-            <h1>Analytics</h1>
+            <div style={{marginTop: "-20px"}}><h1>Analytics</h1></div>
+            
             <img src={notification} alt="Notification.png" className="notif" />
             <img src={logo} alt="logo" className="account-img" />
-            <div className="account-name">
-              <h1>Admin</h1>
+            <div className="account-names">
+              <h2>{userEmail}</h2>
             </div>
           </div>
         </div>
@@ -1319,20 +1351,40 @@ function App() {
                         ],
                       },
                       {
-                        name: "Marriage Certificate",
+                        name: "Marriage Registration",
                         data: [
                           {
-                            x: "Marriage Certificate",
+                            x: "Marriage Registration",
+                            y: recordCounts.marriageRegistration,
+                            color: "#82ca9d",
+                          },
+                        ],
+                      },
+                      {
+                        name: "Copy of Marriage Certificate",
+                        data: [
+                          {
+                            x: "Copy of Marriage Certificate",
                             y: recordCounts.marriageCertificate,
                             color: "#ffc658",
                           },
                         ],
                       },
                       {
-                        name: "Death Certificate",
+                        name: "Death Registration",
                         data: [
                           {
-                            x: "Death Certificate",
+                            x: "Death Registration",
+                            y: recordCounts.deathRegistration,
+                            color: "#82ca9d",
+                          },
+                        ],
+                      },
+                      {
+                        name: "Copy of Death Certificate",
+                        data: [
+                          {
+                            x: "Copy of Death Certificate",
                             y: recordCounts.deathCertificate,
                             color: "#ff7300",
                           },
@@ -1416,8 +1468,33 @@ function App() {
                       ).toFixed(2)}
                       %.
                     </p>
+                    <p style={{ textAlign: "center",fontSize: "16px"}}>
+                      The number of Marriage Registration for{" "}
+                      {new Date(2000, selectedMonth - 1, 1).toLocaleString(
+                        "default",
+                        {
+                          month: "long",
+                        }
+                      )}{" "}
+                      is {recordCounts.marriageRegistration} registrations, from
+                      all of the{" "}
+                      {Object.values(recordCounts).reduce(
+                        (acc, count) => acc + count,
+                        0
+                      )}{" "}
+                      transactions with a corresponding percentage of{" "}
+                      {(
+                        (recordCounts.marriageRegistration /
+                          Object.values(recordCounts).reduce(
+                            (acc, count) => acc + count,
+                            0
+                          )) *
+                        100
+                      ).toFixed(2)}
+                      %.
+                    </p>
                     <p style={{ textAlign: "center",fontSize: "16px"}}> 
-                      The number of Marriage Certificate for{" "} {new Date(2000, selectedMonth - 1, 1).toLocaleString(
+                      The number of Requested Copy of Marriage Certificate for{" "} {new Date(2000, selectedMonth - 1, 1).toLocaleString(
                         "default",
                         {
                           month: "long",
@@ -1439,6 +1516,31 @@ function App() {
                     </p>
                     <p style={{ textAlign: "center",fontSize: "16px"}}>
                       The number of Death Registration for{" "}
+                      {new Date(2000, selectedMonth - 1, 1).toLocaleString(
+                        "default",
+                        {
+                          month: "long",
+                        }
+                      )}{" "}
+                      is {recordCounts.deathRegistration} registrations, from
+                      all of the{" "}
+                      {Object.values(recordCounts).reduce(
+                        (acc, count) => acc + count,
+                        0
+                      )}{" "}
+                      transactions with a corresponding percentage of{" "}
+                      {(
+                        (recordCounts.deathRegistration /
+                          Object.values(recordCounts).reduce(
+                            (acc, count) => acc + count,
+                            0
+                          )) *
+                        100
+                      ).toFixed(2)}
+                      %.
+                    </p>
+                    <p style={{ textAlign: "center",fontSize: "16px"}}>
+                      The number of Requested Copy of Death Certificate for{" "}
                       {new Date(2000, selectedMonth - 1, 1).toLocaleString(
                         "default",
                         {
@@ -1642,7 +1744,6 @@ function App() {
             value={selectedFilter.year}
             onChange={(e) => handleYearChange(e.target.value)}
           >
-            {/* Add options for years */}
             {Array.from(
               { length: 10 },
               (_, i) => new Date().getFullYear() - i

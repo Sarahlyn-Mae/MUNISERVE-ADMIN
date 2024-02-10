@@ -13,6 +13,8 @@ import { Table, Pagination } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 import jsPDF from "jspdf";
 import { Link, useLocation, useHistory } from "react-router-dom";
+import useAuth from "../components/useAuth";
+
 
 // Firebase configuration
 const firebaseConfig = {
@@ -43,10 +45,25 @@ function App() {
   const [selectedDayFilter, setSelectedDayFilter] = useState("");
   const [selectedStatusFilter, setSelectedStatusFilter] = useState("");
   const [selectedBarangayFilter, setSelectedBarangayFilter] = useState("");
-  const [selectedServiceTypeFilter, setSelectedServiceTypeFilter] =
-    useState("");
+  const [selectedServiceTypeFilter, setSelectedServiceTypeFilter] = useState("");
 
-  // Mapping between collectionName and display names
+   //Function for the account name
+   const { user } = useAuth();
+   const [userEmail, setUserEmail] = useState("");
+ 
+   useEffect(() => {
+     const fetchUserEmail = () => {
+       if (user) {
+         const email = user.email;
+         const truncatedEmail =
+           email.length > 9 ? `${email.substring(0, 9)}..` : email;
+         setUserEmail(truncatedEmail);
+       }
+     };
+ 
+     fetchUserEmail();
+   }, [user]);
+
   const collectionTypeMap = {
     birth_reg: "Birth Registration",
     marriage_reg: "Marriage Registration",
@@ -547,7 +564,7 @@ function App() {
   };
 
   const storedYears = localStorage.getItem("availableYears");
-  const defaultYears = ["2026", "2025", "2024", "2023"];
+  const defaultYears = ["2024", "2023"];
   const initialAvailableYears = storedYears
     ? JSON.parse(storedYears)
     : defaultYears;
@@ -582,29 +599,30 @@ function App() {
       </div>
 
       <div className="container">
-        <div className="header">
+        <div className="headers">
           <div className="icons">
-            <h1>Reports</h1>
+            <div style={{marginTop: "-20px"}}><h1>Reports</h1></div>
             <img src={notification} alt="Notification.png" className="notif" />
             <img src={logo} alt="logo" className="account-img" />
-            <div className="account-name">
-              <h1>Admin</h1>
+            <div className="account-names">
+              <h2>{userEmail}</h2>
             </div>
           </div>
         </div>
 
+
         <div className="title">
-          <h1>All Records</h1>
+          <h1 style={{textAlign: "center"}}>All Records</h1>
         </div>
 
         <div className="searchess">
-          <FaSearch className="search-icons"></FaSearch>
+          <FaSearch className="search-iconn"></FaSearch>
           <input
             type="text"
             placeholder="Search by Name"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="search-input"
+            className="search-inputt"
           />
           <div className="filter-container">
           <label>Filter:</label>
@@ -614,12 +632,8 @@ function App() {
             className="filter"
           >
             <option value="">Year</option>
-            {availableYears.map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            ))}
-            <option value="addYear">Add Year</option>
+              <option value="2024">2024</option>
+              <option value="2023">2023</option>
           </select>
 
             <select

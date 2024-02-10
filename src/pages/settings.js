@@ -12,7 +12,7 @@ import {
   faLock,
   faTools,
 } from "@fortawesome/free-solid-svg-icons";
-import "./settings.css";
+import "./transactions.css";
 import useAuth from "../components/useAuth";
 import { initializeApp } from "firebase/app";
 import {
@@ -156,141 +156,138 @@ const AdminSettings = () => {
   };
 
   return (
-    <div className="sidebar">
-      <Sidebar />
-
-      <div className="container">
-        {showForm && <div className="dimmed"></div>}
-        <div className="header">
+        <div className="container">
+          {showForm && <div className="dimmed"></div>}
+          <div className="headers" style={{marginLeft: "50px"}}>
           <div className="icons">
-            <h1>Settings</h1>
+            <div style={{marginTop: "-20px"}}><h1>Settings</h1></div>
+            
             <img src={notification} alt="Notification.png" className="notif" />
             <img src={logo} alt="logo" className="account-img" />
             <div className="account-names">
               <h2>{userEmail}</h2>
             </div>
           </div>
-        </div>
+          </div>
 
-        <div className="heading">
-          <h4>Account Setting</h4>
-        </div>
+          <div className="heading">
+            <h4>Account Setting</h4>
+          </div>
 
-        <div className="admin-profile">
-          <img src={logo} alt="Admin Profile" className="profile-image" />
+          <div className="admin-profile">
+            <img src={logo} alt="Admin Profile" className="profile-image" />
+            <div>
+              <div className="user-container">
+                <div className="user-info">
+                  <h3>{user?.displayName || userName || "Admin"}</h3>
+                  <p>{user?.email || userEmail}</p>
+                </div>
+
+                <div className="user-buttons">
+                  <button onClick={() => openForm("add")}>
+                    <FontAwesomeIcon icon={faPlus} />
+                  </button>
+
+                  <button onClick={() => openForm("edit", user?.id)}>
+                    {/* Use optional chaining */}
+                    <FontAwesomeIcon icon={faEdit} />
+                  </button>
+
+                  <button onClick={() => openForm("delete", user?.id)}>
+                    {/* Use optional chaining */}
+                    <FontAwesomeIcon icon={faTrashAlt} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {showForm && (
+            <div className="form-container">
+              <form onSubmit={handleSubmit}>
+                <label>
+                  Name:
+                  <input
+                    type="text"
+                    name="name"
+                    value={newUser.name}
+                    onChange={handleInputChange}
+                  />
+                </label>
+                <label>
+                  Email:
+                  <input
+                    type="text"
+                    name="email"
+                    value={newUser.email}
+                    onChange={handleInputChange}
+                  />
+                </label>
+                <label>
+                  Password:
+                  <input
+                    type="password"
+                    name="password"
+                    value={newUser.password}
+                    onChange={handleInputChange}
+                  />
+                </label>
+                <div className="button-form">
+                  <button type="submit" className="adds">
+                    {formAction === "edit"
+                      ? "Update"
+                      : formAction === "add"
+                      ? "Add"
+                      : "Delete"}
+                  </button>
+                  <button type="button" onClick={closeForm} className="adds">
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Other content */}
           <div>
-            <div className="user-container">
-              <div className="user-info">
-                <h3>{user?.displayName || "Admin"}</h3>
-                <p>{user?.email}</p>
+            <Link to="editables" className="link">
+              <div className="content-container">
+                <span>
+                  <FontAwesomeIcon icon={faEdit} className="iconss" />
+                </span>{" "}
+                <span className="text">Editables</span>
               </div>
+            </Link>
 
-              <div className="user-buttons">
-                <button onClick={() => openForm("add")}>
-                  <FontAwesomeIcon icon={faPlus} />
-                </button>
-
-                <button onClick={() => openForm("edit", user?.id)}>
-                  {/* Use optional chaining */}
-                  <FontAwesomeIcon icon={faEdit} />
-                </button>
-
-                <button onClick={() => openForm("delete", user?.id)}>
-                  {/* Use optional chaining */}
-                  <FontAwesomeIcon icon={faTrashAlt} />
-                </button>
+            <Link to="helps" className="link">
+              <div className="privacy-container">
+                <span>
+                  <FontAwesomeIcon icon={faTools} className="iconss" />
+                </span>{" "}
+                <span className="text">Helps</span>
               </div>
-            </div>
+            </Link>
+
+            <Link to="/terms" className="link">
+              <div className="privacy-container">
+                <span>
+                  {" "}
+                  <FontAwesomeIcon icon={faFileAlt} className="iconss" />
+                </span>
+                <span className="text"> Terms and Conditions</span>
+              </div>
+            </Link>
+
+            <Link to="/privacy" className="link">
+              <div className="privacy-container">
+                <span>
+                  <FontAwesomeIcon icon={faLock} className="iconss" />
+                </span>{" "}
+                <span className="text">Privacy Policy</span>
+              </div>
+            </Link>
           </div>
         </div>
-
-        {showForm && (
-          <div className="form-container">
-            <form onSubmit={handleSubmit}>
-              <label>
-                Name:
-                <input
-                  type="text"
-                  name="name"
-                  value={newUser.name}
-                  onChange={handleInputChange}
-                />
-              </label>
-              <label>
-                Email:
-                <input
-                  type="text"
-                  name="email"
-                  value={newUser.email}
-                  onChange={handleInputChange}
-                />
-              </label>
-              <label>
-                Password:
-                <input
-                  type="password"
-                  name="password"
-                  value={newUser.password}
-                  onChange={handleInputChange}
-                />
-              </label>
-              <div className="button-form">
-                <button type="submit" className="adds">
-                  {formAction === "edit"
-                    ? "Update"
-                    : formAction === "add"
-                    ? "Add"
-                    : "Delete"}
-                </button>
-                <button type="button" onClick={closeForm} className="adds">
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {/* Other content */}
-        <div>
-          <Link className="link">
-            <div className="content-container">
-              <span>
-                <FontAwesomeIcon icon={faEdit} className="iconss" />
-              </span>{" "}
-              <span className="text">Editables</span>
-            </div>
-          </Link>
-
-          <Link className="link">
-            <div className="privacy-container">
-              <span>
-                <FontAwesomeIcon icon={faTools} className="iconss" />
-              </span>{" "}
-              <span className="text">Helps</span>
-            </div>
-          </Link>
-
-          <Link to="/terms" className="link">
-            <div className="privacy-container">
-              <span>
-                {" "}
-                <FontAwesomeIcon icon={faFileAlt} className="iconss" />
-              </span>
-              <span className="text"> Terms and Conditions</span>
-            </div>
-          </Link>
-
-          <Link className="link">
-            <div className="privacy-container">
-              <span>
-                <FontAwesomeIcon icon={faLock} className="iconss" />
-              </span>{" "}
-              <span className="text">Privacy Policy</span>
-            </div>
-          </Link>
-        </div>
-      </div>
-    </div>
   );
 };
 

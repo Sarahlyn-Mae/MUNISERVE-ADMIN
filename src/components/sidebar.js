@@ -28,7 +28,8 @@ const SidebarContainer = styled.div`
   margin-top: 0px;
   border-top-right-radius: 50px;
   border-bottom-right-radius: 50px;
-`;
+  display: ${(props) => (props.isVisible ? 'flex' : 'none')};`
+  ;
 
 const SidebarHeader = styled.div`
   padding: 20px;
@@ -106,17 +107,17 @@ const Sidebar = () => {
   const location = useLocation();
   const history = useHistory();
   const [activeMenu, setActiveMenu] = useState('');
-  const [isVisible, setIsVisible] = useState(true); // State to control sidebar visibility
-
+  const [isVisible, setIsVisible] = useState(true);
+  
   useEffect(() => {
     const currentPath = location.pathname;
     setActiveMenu(currentPath);
   }, [location]);
 
   const handleLogout = () => {
-    setIsVisible(false); // Hide sidebar
-    history.push('/login'); // Navigate to login page
-  };
+    setIsVisible(false);
+    history.push('/login');
+  };  
 
   return (
     <SidebarContainer isVisible={isVisible}>

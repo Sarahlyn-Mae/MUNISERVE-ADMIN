@@ -5,7 +5,7 @@ import Sidebar from "./components/sidebar";
 import MainContent from "./components/MainContent";
 import Login from "./pages/login";
 import Dashboard from "./pages/dashboard";
-import Transactions from "./pages/transactions";
+import ForgotPassword from "./pages/forgotpassword";
 import Appointments from "./pages/appointments";
 import News from "./pages/news";
 import Users from "./pages/users";
@@ -18,9 +18,11 @@ import MarriageReg from "./pages/marriage_reg";
 import DeathReg from "./pages/death_reg";
 import Death from "./pages/deathCert";
 import Job from "./pages/job";
-import Analytics from "./pages/analytics"
-import Terms from "./pages/terms"
-
+import Analytics from "./pages/analytics";
+import Terms from "./pages/terms";
+import Privacy from "./pages/privacy";
+import Helps from "./pages/helps";
+import Editables from "./pages/editables";
 
 const Layout = () => {
   return (
@@ -31,7 +33,7 @@ const Layout = () => {
           <Switch>
             <Route exact path="/login" component={Login} />
             <Route path="/dashboard" component={Dashboard} />
-            <Route path="/transactions" component={Transactions} />
+            <Route path="/forgotpassword" component={ForgotPassword} />
             <Route path="/appointments" component={Appointments} />
             <Route path="/news" component={News} />
             <Route path="/users" component={Users} />
@@ -45,6 +47,9 @@ const Layout = () => {
             <Route path="/job" component={Job} />
             <Route path="/analytics" component={Analytics} />
             <Route path="/terms" component={Terms} />
+            <Route path="/privacy" component={Privacy} />
+            <Route path="/helps" component={Helps} />
+            <Route path="/editables" component={Editables} />
 
           </Switch>
         </MainContent>

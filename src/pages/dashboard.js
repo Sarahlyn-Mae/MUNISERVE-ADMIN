@@ -8,6 +8,11 @@ import {
   BsClockHistory,
   BsCheckCircleFill,
   BsXCircleFill,
+  BsArrowReturnLeft,
+  BsArrowClockwise,
+  BsArrowUpCircle,
+  BsArrowRightCircle,
+  BsCheckAll,
 } from "react-icons/bs";
 import useAuth from "../components/useAuth";
 import "firebase/firestore";
@@ -52,7 +57,7 @@ const Dashboard = ({ count }) => {
     const monthlyTransactions = await getMonthlyData(currentYear);
     setMonthlyData(monthlyTransactions);
   };
-  
+
   const getMonthlyData = async (year) => {
     // Array of collection queries
     const collectionQueries = [
@@ -87,11 +92,11 @@ const Dashboard = ({ count }) => {
         where("createdAt", "<", Timestamp.fromDate(new Date(`${year}-12-31`)))
       ),
     ];
-  
+
     try {
       // Execute all queries concurrently
       const queryResults = await Promise.all(collectionQueries.map(getDocs));
-  
+
       // Extract data from query results
       const collectionData = queryResults.map((snapshot) =>
         snapshot.docs.map((doc) => {
@@ -101,38 +106,42 @@ const Dashboard = ({ count }) => {
           return { ...data, createdAt };
         })
       );
-  
+
       // Combine data from different collections
       const allData = [].concat(...collectionData);
-  
+
       // Calculate monthly count
       const monthlyCount = Array.from({ length: 12 }, (_, monthIndex) => {
-        const monthName = new Date(year, monthIndex, 1).toLocaleString("default", {
-          month: "long",
-        });
+        const monthName = new Date(year, monthIndex, 1).toLocaleString(
+          "default",
+          {
+            month: "long",
+          }
+        );
         const count = allData.filter((item) => {
           const itemMonth = item.createdAt.getMonth();
           return itemMonth === monthIndex;
         }).length;
         return { month: monthName, count };
       });
-  
+
       return monthlyCount;
     } catch (error) {
       console.error("Error fetching monthly data:", error);
       return [];
     }
   };
-  
+
   //Function for the account name
   const { user } = useAuth();
-  const [userEmail, setUserEmail] = useState('');
+  const [userEmail, setUserEmail] = useState("");
 
   useEffect(() => {
     const fetchUserEmail = () => {
       if (user) {
         const email = user.email;
-        const truncatedEmail = email.length > 9 ? `${email.substring(0, 9)}..` : email;
+        const truncatedEmail =
+          email.length > 9 ? `${email.substring(0, 9)}..` : email;
         setUserEmail(truncatedEmail);
       }
     };
@@ -169,7 +178,6 @@ const Dashboard = ({ count }) => {
           marriageCertSnapshot,
           deathCertSnapshot,
           jobSnapshot,
-          
         ] = await Promise.all([
           getDocs(appointmentsCollection),
           getDocs(birthRegCollection),
@@ -206,6 +214,7 @@ const Dashboard = ({ count }) => {
 
   const [statusCounts, setStatusCounts] = useState({
     Pending: 0,
+    OnProcess: 0,
     Completed: 0,
     Approved: 0,
     Disapproved: 0,
@@ -234,7 +243,14 @@ const Dashboard = ({ count }) => {
 
         const counts = await Promise.all(
           collections.map(async (collectionName) => {
-            const pendingCount = await getStatusCount(collectionName, "Pending");
+            const pendingCount = await getStatusCount(
+              collectionName,
+              "Pending"
+            );
+            const onprocessCount = await getStatusCount(
+              collectionName,
+              "On Process"
+            );
             const completedCount = await getStatusCount(
               collectionName,
               "Completed"
@@ -251,6 +267,7 @@ const Dashboard = ({ count }) => {
             return {
               collectionName,
               pendingCount,
+              onprocessCount,
               completedCount,
               approvedCount,
               disapprovedCount,
@@ -262,12 +279,13 @@ const Dashboard = ({ count }) => {
         const totalStatusCounts = counts.reduce(
           (accumulator, currentCount) => {
             accumulator.pending += currentCount.pendingCount;
+            accumulator.onprocess += currentCount.onprocessCount;
             accumulator.completed += currentCount.completedCount;
             accumulator.approved += currentCount.approvedCount;
             accumulator.disapproved += currentCount.disapprovedCount;
             return accumulator;
           },
-          { pending: 0, completed: 0, approved: 0, disapproved: 0 }
+          { pending: 0, onprocess: 0, completed: 0, approved: 0, disapproved: 0 }
         );
 
         console.log("Status Counts:", totalStatusCounts);
@@ -282,14 +300,13 @@ const Dashboard = ({ count }) => {
     fetchStatusCounts();
   }, []);
 
-
   return (
-    <main className="main-csontainer">
+    <main className="main-container">
       <div className="sidebar">
         <Sidebar />
       </div>
 
-      <div className="container">
+      <div className="contain">
         <div className="header">
           <div className="icons">
             <h1>Dashboard</h1>
@@ -302,45 +319,61 @@ const Dashboard = ({ count }) => {
         </div>
 
         <div className="mainbox">
-            <div className="total">
-                <div class="card-inner">
-              <h3>Total No. of Service Requests</h3>
+          <div className="total">
+            <div class="card-inner">
+              <h3>
+                Total No. of <br /> Service <br /> Requests
+              </h3>
               <BsClipboardCheckFill className="total_icon" />
-              <p>{Object.values(recordCounts).reduce((acc, count) => acc + count, 0)}</p>
-              </div>
+              <p>
+                {Object.values(recordCounts).reduce(
+                  (acc, count) => acc + count,
+                  0
+                )}
+              </p>
+            </div>
           </div>
 
-            <div className="pending">
-              <div class="card-inner">
+          <div className="pending">
+            <div class="card-inner">
               <h3>Pending</h3>
               <BsClockHistory className="pending_icon" />
               <p>{statusCounts.pending}</p>
-              </div>
+            </div>
           </div>
 
-            <div className="complete">
+          <div className="on-process">
+            <div class="card-inner">
+              <h3>On Process</h3>
+              <BsArrowRightCircle className="pending_icon" />
+              <p>{statusCounts.onprocess}</p>
+            </div>
+          </div>
+
+          <div className="complete">
             <div class="card-inner">
               <h3>Completed</h3>
-              <BsCheckCircleFill className="complete_icon" />
+              <BsCheckAll className="complete_icon" />
               <p>{statusCounts.completed}</p>
-              </div>
+            </div>
           </div>
 
-            <div className="disapproved">
-            <div class="card-inner">
-              <h3>Disapproved</h3>
-              <BsXCircleFill className="dis_icon" />
-              <p>{statusCounts.disapproved}</p>
-              </div>
-          </div>
-
-            <div className="approved">
+          <div className="approved">
             <div class="card-inner">
               <h3>Approved</h3>
               <BsCheckCircleFill className="app_icon" />
               <p>{statusCounts.approved}</p>
-              </div>
             </div>
+          </div>
+
+          <div className="disapproved">
+            <div class="card-inner">
+              <h3>Disapproved</h3>
+              <BsXCircleFill className="dis_icon" />
+              <p>{statusCounts.disapproved}</p>
+            </div>
+          </div>
+
         </div>
 
         <div className="chart">
@@ -398,36 +431,38 @@ const Dashboard = ({ count }) => {
           )}
 
           <div className="monthly-chart">
-          <div className="col-4">
-            <ReactApexChart
-              options={{
-                colors: ["#8884d8"],
-                chart: {
-                  type: "bar",
-                },
-                title: {
-                  text: "TOTAL TRANSACTION PER MONTH",
-                  align: "center",
-                  style: {
-                    fontSize: "16px",
-                    fontWeight: "bold",
+            <div className="col-4">
+              <ReactApexChart
+                options={{
+                  colors: ["#8884d8"],
+                  chart: {
+                    type: "bar",
                   },
-                },
-                xaxis: {
-                  categories: monthlyData.map((data) => data.month),
-                },
-              }}
-              series={[
-                { name: "Count", data: monthlyData.map((data) => data.count) },
-              ]}
-              type="bar"
-              width={650}
-              height={500}
-            />
-          </div>
+                  title: {
+                    text: "TOTAL TRANSACTION PER MONTH",
+                    align: "center",
+                    style: {
+                      fontSize: "16px",
+                      fontWeight: "bold",
+                    },
+                  },
+                  xaxis: {
+                    categories: monthlyData.map((data) => data.month),
+                  },
+                }}
+                series={[
+                  {
+                    name: "Count",
+                    data: monthlyData.map((data) => data.count),
+                  },
+                ]}
+                type="bar"
+                width={650}
+                height={500}
+              />
+            </div>
           </div>
         </div>
-        
       </div>
     </main>
   );
