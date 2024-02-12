@@ -134,6 +134,14 @@ h1 {
 /* Style for the search icon */
 .search-iconss {
     position: absolute;
+    top: 43%;
+    left: 40px; /* Adjust the left position as needed */
+    transform: translateY(-70%);
+    color: black; /* Icon color */
+  }
+
+  .search-iconsss {
+    position: absolute;
     top: 40%;
     left: 40px; /* Adjust the left position as needed */
     transform: translateY(-70%);
@@ -143,7 +151,7 @@ h1 {
   .search-iconn {
     position: absolute;
     top: 50%;
-    left: 35px; /* Adjust the left position as needed */
+    left: 20px; /* Adjust the left position as needed */
     transform: translateY(-70%);
     color: black; /* Icon color */
   }
@@ -181,7 +189,7 @@ h1 {
   max-width: 300px; /* Adjust the width as needed */
   font-size: 14px;
   outline: none;
-  margin-left: 180px;
+  margin-left: 155px;
 }
 
 .search-inputs {
@@ -486,7 +494,7 @@ label {
 .analytics,
 .yearly-barangay-chart {
     margin-top: 40px;
-    margin-left: 60px;
+    margin-left: 80px;
     font-size: 30px;
     font-weight: 600;
 }
@@ -500,12 +508,12 @@ label {
 
 .part {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     justify-content: space-around;
     align-items: center;
     width: 100%;
     margin-top: 30px;
-    margin-left: -200px;
+    margin-left: 20px;
 }
 
 .partt {
@@ -515,7 +523,7 @@ label {
     align-items: center;
     width: 100%;
     margin-top: 30px;
-    margin-left: 230px;
+    margin-left: 150px;
 }
 
 .dates {
@@ -530,6 +538,7 @@ label {
     align-items: center;
     width: 100%;
     margin-left: 30px;
+    margin-top: -30px;
 }
 
 .directions h1 {

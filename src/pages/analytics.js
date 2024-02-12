@@ -18,6 +18,7 @@ import logo from "../assets/logo.png";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import useAuth from "../components/useAuth";
+import ApexCharts from "react-apexcharts";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -115,7 +116,15 @@ function App() {
 
     fetchServiceData(selectedDate);
     fetchDailyData(startDate, endDate);
-  }, [startDate, endDate, selectedServiceType, selectedBarangay, selectedYear, selectedFilter, selectedMonth]);
+  }, [
+    startDate,
+    endDate,
+    selectedServiceType,
+    selectedBarangay,
+    selectedYear,
+    selectedFilter,
+    selectedMonth,
+  ]);
 
   const fetchUserCount = async () => {
     try {
@@ -1167,7 +1176,7 @@ function App() {
       let highest = yearlyDataForBarangay[0];
       let lowest = yearlyDataForBarangay[0];
 
-      yearlyDataForBarangay.forEach(data => {
+      yearlyDataForBarangay.forEach((data) => {
         if (data.count > highest.count) {
           highest = data;
         }
@@ -1187,21 +1196,102 @@ function App() {
   }, [yearlyDataForBarangay]);
 
   //Function for the account name
- const { user } = useAuth();
- const [userEmail, setUserEmail] = useState("");
+  const { user } = useAuth();
+  const [userEmail, setUserEmail] = useState("");
 
- useEffect(() => {
-   const fetchUserEmail = () => {
-     if (user) {
-       const email = user.email;
-       const truncatedEmail =
-         email.length > 9 ? `${email.substring(0, 9)}..` : email;
-       setUserEmail(truncatedEmail);
-     }
-   };
+  useEffect(() => {
+    const fetchUserEmail = () => {
+      if (user) {
+        const email = user.email;
+        const truncatedEmail =
+          email.length > 9 ? `${email.substring(0, 9)}..` : email;
+        setUserEmail(truncatedEmail);
+      }
+    };
 
-   fetchUserEmail();
- }, [user]);
+    fetchUserEmail();
+  }, [user]);
+
+  const [birthData, setBirthData] = useState({ series: [], options: {} });
+  const [deathData, setDeathData] = useState({ series: [], options: {} });
+  const [jobData, setJobData] = useState({ series: [], options: {} });
+  const [selectedService, setSelectedService] = useState("Birth Registration");
+  const [selectedMonths, setSelectedMonths] = useState("");
+  const [selectedYears, setSelectedYears] = useState("");
+
+  useEffect(() => {
+    const fetchData = async (collectionName, setData) => {
+      try {
+        const snapshot = await getDocs(collection(db, collectionName));
+        let dataCounts = {};
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          const date = new Date(data.createdAt.toDate()); // Convert timestamp to Date
+          const monthMatch =
+            selectedMonth !== "" ? date.getMonth() + 1 === selectedMonth : true;
+          const yearMatch =
+            selectedYear !== ""
+              ? date.getFullYear() === parseInt(selectedYear)
+              : true;
+          if (monthMatch && yearMatch) {
+            if (data.gender) {
+              dataCounts[data.gender] = (dataCounts[data.gender] || 0) + 1;
+            } else if (data.sex) {
+              dataCounts[data.sex.toLowerCase()] =
+                (dataCounts[data.sex.toLowerCase()] || 0) + 1;
+            }
+          }
+        });
+        const series = Object.values(dataCounts);
+        const options = {
+          chart: {
+            type: "pie",
+            height: 300,
+          },
+          labels: Object.keys(dataCounts),
+          colors: ["#89B9AD", "#0D9276"],
+          legend: {
+            position: "bottom",
+          },
+        };
+        setData({ series, options });
+      } catch (error) {
+        console.error("Error fetching data: ", error);
+      }
+    };
+    fetchData("birth_reg", setBirthData);
+    fetchData("death_reg", setDeathData);
+    fetchData("job_application", setJobData);
+  }, [db, selectedMonth, selectedYear]);
+
+  const handleServiceChange = (event) => {
+    setSelectedService(event.target.value);
+  };
+
+  const handleMonthChange = (event) => {
+    const month = event.target.value;
+    // Create a map to convert month names to their numerical representation
+    const monthMap = {
+      January: 1,
+      February: 2,
+      March: 3,
+      April: 4,
+      May: 5,
+      June: 6,
+      July: 7,
+      August: 8,
+      September: 9,
+      October: 10,
+      November: 11,
+      December: 12,
+    };
+    // Set the selected month to its numerical representation
+    setSelectedMonth(monthMap[month]);
+  };
+
+  const handleYearChanges = (event) => {
+    setSelectedYear(event.target.value);
+  };
 
   return (
     <div>
@@ -1212,8 +1302,10 @@ function App() {
       <div className="container">
         <div className="headers">
           <div className="icons">
-            <div style={{marginTop: "-20px"}}><h1>Analytics</h1></div>
-            
+            <div style={{ marginTop: "-20px" }}>
+              <h1>Analytics</h1>
+            </div>
+
             <img src={notification} alt="Notification.png" className="notif" />
             <img src={logo} alt="logo" className="account-img" />
             <div className="account-names">
@@ -1231,6 +1323,7 @@ function App() {
                   selected={startDate}
                   onChange={handleStartDateChange}
                   dateFormat="MMMM d, yyyy"
+                  className="year"
                 />
               </div>
               <div className="datepicker">
@@ -1239,6 +1332,7 @@ function App() {
                   selected={endDate}
                   onChange={handleEndDateChange}
                   dateFormat="MMMM d, yyyy"
+                  className="year"
                 />
               </div>
             </div>
@@ -1287,18 +1381,26 @@ function App() {
               />
             </div>
             <div className="description">
-              <h5 style={{ textAlign: "center",marginTop: "20px",fontWeight: "bold",}}>
+              <h5
+                style={{
+                  textAlign: "center",
+                  marginTop: "20px",
+                  fontWeight: "bold",
+                }}
+              >
                 Figure 1. TOTAL TRANSACTIONS PER SERVICES
               </h5>
-              <p style={{ textAlign: "center",marginTop: "16px"}}>
-                Figure 1 illustrates the distribution of transactions across various services  
-                including birth registration, marriage registration, death registration, job application, 
-                and appointments within the selected time frame.
-                It offers insights into the volume of activity associated with each service, 
-                aiding in the assessment of service utilization and demand patterns.
-                The graph enables a comparative analysis of transaction volumes across these service 
-                categories, offering valuable insights into the distribution and utilization of 
-                administrative services based on the selected date range.
+              <p style={{ textAlign: "center", marginTop: "16px" }}>
+                Figure 1 illustrates the distribution of transactions across
+                various services including birth registration, marriage
+                registration, death registration, job application, and
+                appointments within the selected time frame. It offers insights
+                into the volume of activity associated with each service, aiding
+                in the assessment of service utilization and demand patterns.
+                The graph enables a comparative analysis of transaction volumes
+                across these service categories, offering valuable insights into
+                the distribution and utilization of administrative services
+                based on the selected date range.
               </p>
             </div>
           </div>
@@ -1407,7 +1509,6 @@ function App() {
                   />
                 </div>
                 <div>
-                  <div className="directions">
                   <h5
                     style={{
                       textAlign: "center",
@@ -1418,259 +1519,185 @@ function App() {
                   >
                     Figure 2. NUMBER OF APPLICATIONS PER SERVICES
                   </h5>
-                    <p style={{ textAlign: "center",fontSize: "16px"}}>
-                      The number of appointments for{" "}
-                      {new Date(2000, selectedMonth - 1, 1).toLocaleString(
-                        "default",
-                        {
-                          month: "long",
-                        }
-                      )}{" "}
-                      is {recordCounts.appointments} applications, from all of
-                      the{" "}
-                      {Object.values(recordCounts).reduce(
-                        (acc, count) => acc + count,
-                        0
-                      )}{" "}
-                      transactions with a corresponding percentage of{" "}
-                      {(
-                        (recordCounts.appointments /
-                          Object.values(recordCounts).reduce(
-                            (acc, count) => acc + count,
-                            0
-                          )) *
-                        100
-                      ).toFixed(2)}
-                      %.
-                    </p>
-                    <p style={{ textAlign: "center",fontSize: "16px"}}>
-                      The number of Birth Registration for{" "}
-                      {new Date(2000, selectedMonth - 1, 1).toLocaleString(
-                        "default",
-                        {
-                          month: "long",
-                        }
-                      )}{" "}
-                      is {recordCounts.birthRegistration} registrations, from
-                      all of the{" "}
-                      {Object.values(recordCounts).reduce(
-                        (acc, count) => acc + count,
-                        0
-                      )}{" "}
-                      transactions with a corresponding percentage of{" "}
-                      {(
-                        (recordCounts.birthRegistration /
-                          Object.values(recordCounts).reduce(
-                            (acc, count) => acc + count,
-                            0
-                          )) *
-                        100
-                      ).toFixed(2)}
-                      %.
-                    </p>
-                    <p style={{ textAlign: "center",fontSize: "16px"}}>
-                      The number of Marriage Registration for{" "}
-                      {new Date(2000, selectedMonth - 1, 1).toLocaleString(
-                        "default",
-                        {
-                          month: "long",
-                        }
-                      )}{" "}
-                      is {recordCounts.marriageRegistration} registrations, from
-                      all of the{" "}
-                      {Object.values(recordCounts).reduce(
-                        (acc, count) => acc + count,
-                        0
-                      )}{" "}
-                      transactions with a corresponding percentage of{" "}
-                      {(
-                        (recordCounts.marriageRegistration /
-                          Object.values(recordCounts).reduce(
-                            (acc, count) => acc + count,
-                            0
-                          )) *
-                        100
-                      ).toFixed(2)}
-                      %.
-                    </p>
-                    <p style={{ textAlign: "center",fontSize: "16px"}}> 
-                      The number of Requested Copy of Marriage Certificate for{" "} {new Date(2000, selectedMonth - 1, 1).toLocaleString(
-                        "default",
-                        {
-                          month: "long",
-                        }
-                      )}{" "} is {recordCounts.marriageCertificate} registrations, from
-                      all of the{" "} {Object.values(recordCounts).reduce(
-                        (acc, count) => acc + count,
-                        0
-                      )}{" "} transactions with a corresponding percentage of{" "}
-                      {(
-                        (recordCounts.marriageCertificate /
-                          Object.values(recordCounts).reduce(
-                            (acc, count) => acc + count,
-                            0
-                          )) *
-                        100
-                      ).toFixed(2)}
-                      %.
-                    </p>
-                    <p style={{ textAlign: "center",fontSize: "16px"}}>
-                      The number of Death Registration for{" "}
-                      {new Date(2000, selectedMonth - 1, 1).toLocaleString(
-                        "default",
-                        {
-                          month: "long",
-                        }
-                      )}{" "}
-                      is {recordCounts.deathRegistration} registrations, from
-                      all of the{" "}
-                      {Object.values(recordCounts).reduce(
-                        (acc, count) => acc + count,
-                        0
-                      )}{" "}
-                      transactions with a corresponding percentage of{" "}
-                      {(
-                        (recordCounts.deathRegistration /
-                          Object.values(recordCounts).reduce(
-                            (acc, count) => acc + count,
-                            0
-                          )) *
-                        100
-                      ).toFixed(2)}
-                      %.
-                    </p>
-                    <p style={{ textAlign: "center",fontSize: "16px"}}>
-                      The number of Requested Copy of Death Certificate for{" "}
-                      {new Date(2000, selectedMonth - 1, 1).toLocaleString(
-                        "default",
-                        {
-                          month: "long",
-                        }
-                      )}{" "}
-                      is {recordCounts.deathCertificate} registrations, from all
-                      of the{" "}
-                      {Object.values(recordCounts).reduce(
-                        (acc, count) => acc + count,
-                        0
-                      )}{" "}
-                      transactions with a corresponding percentage of{" "}
-                      {(
-                        (recordCounts.deathCertificate /
-                          Object.values(recordCounts).reduce(
-                            (acc, count) => acc + count,
-                            0
-                          )) *
-                        100
-                      ).toFixed(2)}
-                      %.
-                    </p>
-                    <p style={{ textAlign: "center",fontSize: "16px"}}>
-                      The number of Job applications for{" "}
-                      {new Date(2000, selectedMonth - 1, 1).toLocaleString(
-                        "default",
-                        {
-                          month: "long",
-                        }
-                      )}{" "}
-                      is {recordCounts.jobApplication} applications, from all of
-                      the{" "}
-                      {Object.values(recordCounts).reduce(
-                        (acc, count) => acc + count,
-                        0
-                      )}{" "}
-                      transactions with a corresponding percentage of{" "}
-                      {(
-                        (recordCounts.jobApplication /
-                          Object.values(recordCounts).reduce(
-                            (acc, count) => acc + count,
-                            0
-                          )) *
-                        100
-                      ).toFixed(2)}
-                      %.
-                    </p>
-                  </div>
                 </div>
               </div>
-
-              <div className="part">
-                <div className="polar-area-chart">
-                  <ReactApexChart
-                    options={{
-                      chart: {
-                        type: "polarArea",
-                      },
-                      labels: serviceTypeData.map((data) => data.name),
-                      fill: {
-                        opacity: 0.8,
-                        colors: [
-                          "#4285F4",
-                          "#34A853",
-                          "#FBBC05",
-                          "#EA4335",
-                          "#FF7252",
-                          "#4B07C0",
-                          "#008A63",
-                          "#AD0040",
-                        ],
-                      },
-                      stroke: {
-                        width: 1,
-                        colors: undefined,
-                      },
-                      yaxis: {
-                        show: false,
-                      },
-                      legend: {
-                        position: "bottom",
-                      },
-                      plotOptions: {
-                        polarArea: {
-                          rings: {
-                            strokeWidth: 1,
-                          },
-                          spokes: {
-                            strokeWidth: 1,
-                          },
-                        },
-                      },
-                      dataLabels: {
-                        enabled: true,
-                        formatter: function (val, opts) {
-                          return opts.w.globals.series[opts.seriesIndex];
-                        },
-                        background: {
-                          enabled: false,
-                        },
-                      },
-                    }}
-                    series={serviceTypeData.map((data) => data.data)}
-                    type="polarArea"
-                    width={700}
-                    height={500}
-                  />
-                </div>
+              <div style={{ marginLeft: "-80px" }}>
                 <div className="directions">
-                  <h5
-                    style={{
-                      textAlign: "center",
-                      marginTop: "20px",
-                      fontWeight: "bold",
-                    }}
-                  >
-                     Figure 3. MOST ACQUIRED SERVICE FOR THE <br/> MONTH OF {currentMonthName.toUpperCase()}
-                  </h5>
-                  <p style={{textAlign: "center",marginTop: "20px",fontSize: "16px",}}>
-                    The most acquired service for this month of{" "}
-                    {currentMonthName} <br/> is {mostAcquiredService.name} with
-                    a total of {mostAcquiredService.data} transactions or (
-                    {mostAcquiredPercentage.toFixed(2)}%).
+                  <p>This Figure 2. presents the following:</p>
+                  <p style={{ textAlign: "justify", fontSize: "16px" }}>
+                    • The number of appointments for{" "}
+                    {new Date(2000, selectedMonth - 1, 1).toLocaleString(
+                      "default",
+                      {
+                        month: "long",
+                      }
+                    )}{" "}
+                    is {recordCounts.appointments} applications, <br /> from all
+                    of the{" "}
+                    {Object.values(recordCounts).reduce(
+                      (acc, count) => acc + count,
+                      0
+                    )}{" "}
+                    transactions with a corresponding percentage of{" "}
+                    {(
+                      (recordCounts.appointments /
+                        Object.values(recordCounts).reduce(
+                          (acc, count) => acc + count,
+                          0
+                        )) *
+                      100
+                    ).toFixed(2)}
+                    %.
                   </p>
-                  <p style={{textAlign: "center",marginTop: "20px",fontSize: "16px",}}>
-                    The least acquired service for this month of{" "}
-                    {currentMonthName} <br/> is {leastAcquiredService.name} {" "}
-                    with a total of {leastAcquiredService.data} transactions or
-                    ({leastAcquiredPercentage.toFixed(2)}%).
+                  <p style={{ textAlign: "justify", fontSize: "16px" }}>
+                    • The number of Birth Registration for{" "}
+                    {new Date(2000, selectedMonth - 1, 1).toLocaleString(
+                      "default",
+                      {
+                        month: "long",
+                      }
+                    )}{" "}
+                    is {recordCounts.birthRegistration} registrations, <br />{" "}
+                    from all of the{" "}
+                    {Object.values(recordCounts).reduce(
+                      (acc, count) => acc + count,
+                      0
+                    )}{" "}
+                    transactions with a corresponding percentage of{" "}
+                    {(
+                      (recordCounts.birthRegistration /
+                        Object.values(recordCounts).reduce(
+                          (acc, count) => acc + count,
+                          0
+                        )) *
+                      100
+                    ).toFixed(2)}
+                    %.
+                  </p>
+                  <p style={{ textAlign: "justify", fontSize: "16px" }}>
+                    • The number of Marriage Registration for{" "}
+                    {new Date(2000, selectedMonth - 1, 1).toLocaleString(
+                      "default",
+                      {
+                        month: "long",
+                      }
+                    )}{" "}
+                    is {recordCounts.marriageRegistration} registrations, <br />{" "}
+                    from all of the{" "}
+                    {Object.values(recordCounts).reduce(
+                      (acc, count) => acc + count,
+                      0
+                    )}{" "}
+                    transactions with a corresponding percentage of{" "}
+                    {(
+                      (recordCounts.marriageRegistration /
+                        Object.values(recordCounts).reduce(
+                          (acc, count) => acc + count,
+                          0
+                        )) *
+                      100
+                    ).toFixed(2)}
+                    %.
+                  </p>
+                  <p style={{ textAlign: "justify", fontSize: "16px" }}>
+                    • The number of Requested Copy of Marriage Certificate for{" "}
+                    {new Date(2000, selectedMonth - 1, 1).toLocaleString(
+                      "default",
+                      {
+                        month: "long",
+                      }
+                    )}{" "}
+                    is {recordCounts.marriageCertificate} <br /> registrations,
+                    from all of the{" "}
+                    {Object.values(recordCounts).reduce(
+                      (acc, count) => acc + count,
+                      0
+                    )}{" "}
+                    transactions with a corresponding <br /> percentage of{" "}
+                    {(
+                      (recordCounts.marriageCertificate /
+                        Object.values(recordCounts).reduce(
+                          (acc, count) => acc + count,
+                          0
+                        )) *
+                      100
+                    ).toFixed(2)}
+                    %.
+                  </p>
+                  <p style={{ textAlign: "justify", fontSize: "16px" }}>
+                    • The number of Death Registration for{" "}
+                    {new Date(2000, selectedMonth - 1, 1).toLocaleString(
+                      "default",
+                      {
+                        month: "long",
+                      }
+                    )}{" "}
+                    is {recordCounts.deathRegistration} registrations, <br />{" "}
+                    from all of the{" "}
+                    {Object.values(recordCounts).reduce(
+                      (acc, count) => acc + count,
+                      0
+                    )}{" "}
+                    transactions with a corresponding percentage of{" "}
+                    {(
+                      (recordCounts.deathRegistration /
+                        Object.values(recordCounts).reduce(
+                          (acc, count) => acc + count,
+                          0
+                        )) *
+                      100
+                    ).toFixed(2)}
+                    %.
+                  </p>
+                  <p style={{ textAlign: "justify", fontSize: "16px" }}>
+                    • The number of Requested Copy of Death Certificate for{" "}
+                    {new Date(2000, selectedMonth - 1, 1).toLocaleString(
+                      "default",
+                      {
+                        month: "long",
+                      }
+                    )}{" "}
+                    is {recordCounts.deathCertificate} <br /> registrations,
+                    from all of the{" "}
+                    {Object.values(recordCounts).reduce(
+                      (acc, count) => acc + count,
+                      0
+                    )}{" "}
+                    transactions with a corresponding <br /> percentage of{" "}
+                    {(
+                      (recordCounts.deathCertificate /
+                        Object.values(recordCounts).reduce(
+                          (acc, count) => acc + count,
+                          0
+                        )) *
+                      100
+                    ).toFixed(2)}
+                    %.
+                  </p>
+                  <p style={{ textAlign: "justify", fontSize: "16px" }}>
+                    • The number of Job applications for{" "}
+                    {new Date(2000, selectedMonth - 1, 1).toLocaleString(
+                      "default",
+                      {
+                        month: "long",
+                      }
+                    )}{" "}
+                    is {recordCounts.jobApplication} applications, <br /> from
+                    all of the{" "}
+                    {Object.values(recordCounts).reduce(
+                      (acc, count) => acc + count,
+                      0
+                    )}{" "}
+                    transactions with a corresponding percentage of{" "}
+                    {(
+                      (recordCounts.jobApplication /
+                        Object.values(recordCounts).reduce(
+                          (acc, count) => acc + count,
+                          0
+                        )) *
+                      100
+                    ).toFixed(2)}
+                    %.
                   </p>
                 </div>
               </div>
@@ -1678,13 +1705,185 @@ function App() {
           )}
         </div>
 
+        <div className="part">
+          <div>
+            <div className="polar-area-chart">
+              <ReactApexChart
+                options={{
+                  chart: {
+                    type: "polarArea",
+                  },
+                  labels: serviceTypeData.map((data) => data.name),
+                  fill: {
+                    opacity: 0.8,
+                    colors: [
+                      "#4285F4",
+                      "#34A853",
+                      "#FBBC05",
+                      "#EA4335",
+                      "#FF7252",
+                      "#4B07C0",
+                      "#008A63",
+                      "#AD0040",
+                    ],
+                  },
+                  stroke: {
+                    width: 1,
+                    colors: undefined,
+                  },
+                  yaxis: {
+                    show: false,
+                  },
+                  legend: {
+                    position: "bottom",
+                  },
+                  plotOptions: {
+                    polarArea: {
+                      rings: {
+                        strokeWidth: 1,
+                      },
+                      spokes: {
+                        strokeWidth: 1,
+                      },
+                    },
+                  },
+                  dataLabels: {
+                    enabled: true,
+                    formatter: function (val, opts) {
+                      return opts.w.globals.series[opts.seriesIndex];
+                    },
+                    background: {
+                      enabled: false,
+                    },
+                  },
+                }}
+                series={serviceTypeData.map((data) => data.data)}
+                type="polarArea"
+                width={700}
+                height={500}
+              />
+            </div>
+            <div className="directions">
+              <h5
+                style={{
+                  textAlign: "center",
+                  marginTop: "20px",
+                  fontWeight: "bold",
+                }}
+              >
+                Figure 3. MOST ACQUIRED SERVICE FOR THE <br /> MONTH OF{" "}
+                {currentMonthName.toUpperCase()}
+              </h5>
+              <p
+                style={{
+                  textAlign: "center",
+                  marginTop: "20px",
+                  fontSize: "16px",
+                }}
+              >
+                The most acquired service for this month of {currentMonthName}{" "}
+                <br /> is {mostAcquiredService.name} with a total of{" "}
+                {mostAcquiredService.data} transactions or (
+                {mostAcquiredPercentage.toFixed(2)}%).
+              </p>
+              <p
+                style={{
+                  textAlign: "center",
+                  marginTop: "20px",
+                  fontSize: "16px",
+                }}
+              >
+                The least acquired service for this month of {currentMonthName}{" "}
+                <br /> is {leastAcquiredService.name} with a total of{" "}
+                {leastAcquiredService.data} transactions or (
+                {leastAcquiredPercentage.toFixed(2)}%).
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <div className="headings">
+              <div className="filterss">
+                <select value={selectedService} onChange={handleServiceChange}>
+                  <option value="Birth Registration">Birth Registration</option>
+                  <option value="Death Registration">Death Registration</option>
+                  <option value="Job Application">Job Application</option>
+                </select>
+                <select value={selectedMonth} onChange={handleMonthChange}>
+                  <option value="">Month</option>
+                  <option value="January">January</option>
+                  <option value="February">February</option>
+                  <option value="March">March</option>
+                  <option value="April">April</option>
+                  <option value="May">May</option>
+                  <option value="June">June</option>
+                  <option value="July">July</option>
+                  <option value="August">August</option>
+                  <option value="September">September</option>
+                  <option value="October">October</option>
+                  <option value="November">November</option>
+                  <option value="December">December</option>
+                </select>
+                <input
+                  type="text"
+                  placeholder="Enter year"
+                  value={selectedYear}
+                  onChange={handleYearChanges}
+                  className="year"
+                />
+              </div>
+            </div>
+            <div>
+              <ApexCharts
+                options={
+                  selectedService === "Birth Registration"
+                    ? birthData.options
+                    : selectedService === "Death Registration"
+                    ? deathData.options
+                    : jobData.options
+                }
+                series={
+                  selectedService === "Birth Registration"
+                    ? birthData.series
+                    : selectedService === "Death Registration"
+                    ? deathData.series
+                    : jobData.series
+                }
+                type="pie"
+                height={400}
+              />
+              <h5
+                style={{
+                  textAlign: "center",
+                  fontWeight: "bold",
+                  marginBottom: "30px",
+                  marginTop: "30px",
+                }}
+              >
+                Figure 4. Count per Sex based on {selectedService}
+              </h5>
+              <p style={{ textAlign: "center" }}>
+                This pie chart illustrates the distribution of registrations
+                based on gender for the selected service and month.
+                The chart visualizes the proportion of Male and Female
+                registrations, providing insights into the gender demographics
+                of the registration data. Each slice of the pie
+                represents a gender category, with the corresponding percentage
+                indicating the relative frequency of registrations for that
+                gender.
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div className="yearly-barangay-chart">
           <ReactApexChart
             options={{
               chart: {
-                type: "bar",
+                type: "line",
                 height: 400,
               },
+              colors: ["#1e7566"],
               plotOptions: {
                 bar: {
                   horizontal: false,
@@ -1710,40 +1909,60 @@ function App() {
                 data: yearlyDataForBarangay.map((data) => data.count),
               },
             ]}
-            type="bar"
+            type="line"
             width={1300}
             height={600}
           />
           <div className="description">
-              <h5 style={{ textAlign: "center",marginTop: "20px",fontWeight: "bold",}}>
-                Figure 4. TOTAL TRANSACTIONS PER BARANGAYS
-              </h5>
-              <p style={{ textAlign: "center",fontSize: "16px", fontWeight: "normal" }}>
-              Figure 4 illustrates the total number of transactions recorded for each barangay within a year. 
-              Transactions are categorized by barangay, providing a comprehensive overview of activity distribution across different areas.
-              The chart highlights the varying levels of transaction activity across barangays, with some areas showing higher transaction 
-              volumes compared to others.
+            <h5
+              style={{
+                textAlign: "center",
+                marginTop: "20px",
+                fontWeight: "bold",
+              }}
+            >
+              Figure 4. TOTAL TRANSACTIONS PER BARANGAYS
+            </h5>
+            <p
+              style={{
+                textAlign: "center",
+                fontSize: "16px",
+                fontWeight: "normal",
+              }}
+            >
+              Figure 4 illustrates the total number of transactions recorded for
+              each barangay within a year. Transactions are categorized by
+              barangay, providing a comprehensive overview of activity
+              distribution across different areas. The chart highlights the
+              varying levels of transaction activity across barangays, with some
+              areas showing higher transaction volumes compared to others.
               <br /> <br />
-              The Barangay/s of {highestTransaction && highestTransaction.barangay} emerges as a significant contributor to the total 
-              transaction count, indicating a concentration of economic or social activity in this region. This heightened level of 
-              transactional engagement may signify various factors such as a larger population, increased demand for services, or 
-              perhaps centralized administrative functions that attract more interactions.
-              <br/> <br />
-              On the other hand, barangay/s like {lowestTransaction && lowestTransaction.barangay} exhibit lower transaction counts, 
-              suggesting potential areas for further analysis or exploration. The lower activity levels could stem from several 
-              factors, including smaller population size, limited access to services, or specific socioeconomic dynamics unique to 
-              these regions. Understanding the underlying reasons for these lower transaction counts is crucial for identifying areas 
-              of improvement, addressing potential disparities in service access, and ensuring equitable service delivery across all barangays.
-              </p>
+              The Barangay/s of{" "}
+              {highestTransaction && highestTransaction.barangay} emerges as a
+              significant contributor to the total transaction count, indicating
+              a concentration of economic or social activity in this region.
+              This heightened level of transactional engagement may signify
+              various factors such as a larger population, increased demand for
+              services, or perhaps centralized administrative functions that
+              attract more interactions.
+              <br /> <br />
+              On the other hand, barangay/s like{" "}
+              {lowestTransaction && lowestTransaction.barangay} exhibit lower
+              transaction counts, suggesting potential areas for further
+              analysis or exploration. The lower activity levels could stem from
+              several factors, including smaller population size, limited access
+              to services, or specific socioeconomic dynamics unique to these
+              regions. Understanding the underlying reasons for these lower
+              transaction counts is crucial for identifying areas of
+              improvement, addressing potential disparities in service access,
+              and ensuring equitable service delivery across all barangays.
+            </p>
           </div>
         </div>
 
         <div className="filterss">
           <label>Year:</label>
-          <select
-            value={selectedFilter.year}
-            onChange={(e) => handleYearChange(e.target.value)}
-          >
+          <select value={selectedFilter.year} onChange={handleYearChange}>
             {Array.from(
               { length: 10 },
               (_, i) => new Date().getFullYear() - i
@@ -1786,23 +2005,40 @@ function App() {
             height={600}
           />
           <div className="description">
-              <h5 style={{ textAlign: "center",marginTop: "20px",fontWeight: "bold",}}>
-                Figure 5. TOTAL TRANSACTIONS PER BARANGAYS BASED ON SERVICE CATEGORIES
-              </h5>
-              <p style={{ textAlign: "center",fontSize: "16px", fontWeight: "normal" }}>
-              The chart illustrates the comprehensive overview of transactional activities 
-              across various barangays, focusing on distinct service categories such as birth 
-              registrations, marriage registrations, death registrations, appointment scheduling, 
-              and job applications. The primary objective is to provide a detailed analysis of 
-              the total number of transactions within each barangay for these specific services. <br/>
-              The visual representation offers valuable insights into the distribution and intensity 
-              of transactions, allowing for a comparative assessment of the service utilization 
-              patterns among different communities. This data-driven depiction facilitates a deeper 
-              understanding of the dynamics of public service engagement, enabling stakeholders to 
-              identify trends, allocate resources effectively, and make informed decisions to enhance 
-              the overall service delivery system.
-              </p>
-            </div>
+            <h5
+              style={{
+                textAlign: "center",
+                marginTop: "20px",
+                fontWeight: "bold",
+              }}
+            >
+              Figure 5. TOTAL TRANSACTIONS PER BARANGAYS BASED ON SERVICE
+              CATEGORIES
+            </h5>
+            <p
+              style={{
+                textAlign: "center",
+                fontSize: "16px",
+                fontWeight: "normal",
+              }}
+            >
+              The chart illustrates the comprehensive overview of transactional
+              activities across various barangays, focusing on distinct service
+              categories such as birth registrations, marriage registrations,
+              death registrations, appointment scheduling, and job applications.
+              The primary objective is to provide a detailed analysis of the
+              total number of transactions within each barangay for these
+              specific services. <br />
+              The visual representation offers valuable insights into the
+              distribution and intensity of transactions, allowing for a
+              comparative assessment of the service utilization patterns among
+              different communities. This data-driven depiction facilitates a
+              deeper understanding of the dynamics of public service engagement,
+              enabling stakeholders to identify trends, allocate resources
+              effectively, and make informed decisions to enhance the overall
+              service delivery system.
+            </p>
+          </div>
         </div>
 
         <div className="analytics">
@@ -1854,18 +2090,34 @@ function App() {
               height={700}
             />
             <div className="description">
-              <h5 style={{ textAlign: "center",marginTop: "20px",fontWeight: "bold",}}>
+              <h5
+                style={{
+                  textAlign: "center",
+                  marginTop: "20px",
+                  fontWeight: "bold",
+                }}
+              >
                 Figure 6. TOTAL TRANSACTIONS PER MONTH BASED ON STATUS
               </h5>
-              <p style={{ textAlign: "center",fontSize: "16px", fontWeight: "normal" }}>
-              The chart visually represents the distribution of total transactions across various 
-              status categories, providing an insightful overview of the current transaction landscape. 
-              Each segment of the chart corresponds to a distinct status category, namely "Pending," 
-              "Approved," "Disapproved," "On Process," and "Rejected." The height or size of each segment 
-              is proportional to the total number of transactions falling under that specific status.
-              This provides a visual comparison of the distribution of transactions across these statuses, 
-              enabling stakeholders to assess the overall status distribution and identify any potential 
-              bottlenecks, trends, or areas of improvement within the transactional workflow. 
+              <p
+                style={{
+                  textAlign: "center",
+                  fontSize: "16px",
+                  fontWeight: "normal",
+                }}
+              >
+                The chart visually represents the distribution of total
+                transactions across various status categories, providing an
+                insightful overview of the current transaction landscape. Each
+                segment of the chart corresponds to a distinct status category,
+                namely "Pending," "Approved," "Disapproved," "On Process," and
+                "Rejected." The height or size of each segment is proportional
+                to the total number of transactions falling under that specific
+                status. This provides a visual comparison of the distribution of
+                transactions across these statuses, enabling stakeholders to
+                assess the overall status distribution and identify any
+                potential bottlenecks, trends, or areas of improvement within
+                the transactional workflow.
               </p>
             </div>
           </div>

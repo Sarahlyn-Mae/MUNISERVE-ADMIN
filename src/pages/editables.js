@@ -23,13 +23,6 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 const AdminSettings = () => {
-  const [birthData, setBirthData] = useState({ series: [], options: {} });
-  const [deathData, setDeathData] = useState({ series: [], options: {} });
-  const [jobData, setJobData] = useState({ series: [], options: {} });
-  const [selectedService, setSelectedService] = useState("Birth Registration");
-  const [selectedMonth, setSelectedMonth] = useState("");
-  const [selectedYear, setSelectedYear] = useState("");
-
   const { user } = useAuth();
   const [userEmail, setUserEmail] = useState("");
 
@@ -46,6 +39,14 @@ const AdminSettings = () => {
     fetchUserEmail();
   }, [user]);
 
+  const [birthData, setBirthData] = useState({ series: [], options: {} });
+  const [deathData, setDeathData] = useState({ series: [], options: {} });
+  const [jobData, setJobData] = useState({ series: [], options: {} });
+  const [selectedService, setSelectedService] = useState("Birth Registration");
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedYear, setSelectedYear] = useState("");
+  const [dataCounts, setDataCounts] = useState({});
+
   useEffect(() => {
     const fetchData = async (collectionName, setData) => {
       try {
@@ -53,9 +54,9 @@ const AdminSettings = () => {
         let dataCounts = {};
         snapshot.forEach((doc) => {
           const data = doc.data();
-          const date = new Date(data.createdAt);
+          const date = new Date(data.createdAt.toDate()); // Convert timestamp to Date
           const monthMatch =
-            selectedMonth !== "" ? date.getMonth() === parseInt(selectedMonth) : true;
+            selectedMonth !== "" ? date.getMonth() + 1 === selectedMonth : true;
           const yearMatch =
             selectedYear !== "" ? date.getFullYear() === parseInt(selectedYear) : true;
           if (monthMatch && yearMatch) {
@@ -94,7 +95,24 @@ const AdminSettings = () => {
   };
 
   const handleMonthChange = (event) => {
-    setSelectedMonth(event.target.value);
+    const month = event.target.value;
+    // Create a map to convert month names to their numerical representation
+    const monthMap = {
+      January: 1,
+      February: 2,
+      March: 3,
+      April: 4,
+      May: 5,
+      June: 6,
+      July: 7,
+      August: 8,
+      September: 9,
+      October: 10,
+      November: 11,
+      December: 12,
+    };
+    // Set the selected month to its numerical representation
+    setSelectedMonth(monthMap[month]);
   };
 
   const handleYearChange = (event) => {
@@ -117,7 +135,7 @@ const AdminSettings = () => {
         </div>
       </div>
 
-      <div className="heading">
+      <div className="headings">
         <h4>Registration Statistics</h4>
         <div className="filterss">
           <select value={selectedService} onChange={handleServiceChange}>
@@ -145,6 +163,7 @@ const AdminSettings = () => {
             placeholder="Enter year"
             value={selectedYear}
             onChange={handleYearChange}
+            className="year"
           />
         </div>
       </div>
@@ -166,11 +185,18 @@ const AdminSettings = () => {
               : jobData.series
           }
           type="pie"
-          height={300}
+          height={400}
         />
+        <h4 style={{ textAlign: "center", fontWeight: "bold", marginBottom: "30px", marginTop: "30px" }}>
+          Figure. Count per Sex based on {selectedService}
+        </h4>
         <p style={{ textAlign: "center" }}>
-          Figure. Count Per Sex ({selectedService})
+          This pie chart illustrates the distribution of registrations based on gender for the selected service and month. 
+          <br/> The chart visualizes the proportion of Male and Female registrations, providing insights into the gender demographics 
+          of the registration data. <br/> Each slice of the pie represents a gender category, with the corresponding percentage 
+          indicating the relative frequency of registrations for that gender. 
         </p>
+
       </div>
     </div>
   );

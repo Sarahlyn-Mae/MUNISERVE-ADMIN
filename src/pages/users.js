@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { initializeApp } from "firebase/app";
-import { getAuth, createUserWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+} from "firebase/auth";
 import {
   getFirestore,
   collection,
@@ -22,6 +26,7 @@ import logo from "../assets/logo.png";
 import "bootstrap/dist/css/bootstrap.min.css";
 import jsPDF from "jspdf";
 import useAuth from "../components/useAuth";
+import { deleteUser } from "firebase/auth";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -49,22 +54,22 @@ function App() {
   const [isAddYearModalOpen, setIsAddYearModalOpen] = useState(false);
   const [newYear, setNewYear] = useState("");
 
-   //Function for the account name
-   const { user } = useAuth();
-   const [userEmail, setUserEmail] = useState("");
- 
-   useEffect(() => {
-     const fetchUserEmail = () => {
-       if (user) {
-         const email = user.email;
-         const truncatedEmail =
-           email.length > 9 ? `${email.substring(0, 9)}..` : email;
-         setUserEmail(truncatedEmail);
-       }
-     };
- 
-     fetchUserEmail();
-   }, [user]);
+  //Function for the account name
+  const { user } = useAuth();
+  const [userEmail, setUserEmail] = useState("");
+
+  useEffect(() => {
+    const fetchUserEmail = () => {
+      if (user) {
+        const email = user.email;
+        const truncatedEmail =
+          email.length > 9 ? `${email.substring(0, 9)}..` : email;
+        setUserEmail(truncatedEmail);
+      }
+    };
+
+    fetchUserEmail();
+  }, [user]);
 
   // Function to fetch data from Firestore
   const fetchData = async () => {
@@ -263,9 +268,12 @@ function App() {
 
   // Filter data based on the search query
   const filteredData = data.filter((item) => {
-    const matchesSearch = item.email
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
+    const matchesSearch =
+      item.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.barangay.toLowerCase().includes(searchQuery.toLowerCase()); // Include barangay in search criteria
+
     const matchesBarangay =
       !selectedBarangayFilter || item.barangay === selectedBarangayFilter;
 
@@ -366,42 +374,48 @@ function App() {
       alert("Please enter a valid email address.");
       return;
     }
-  
+
     try {
       // Generate a random password
       const generatedPassword = generatePassword();
-  
+
       // Add user to Firebase Authentication with the generated password
       const auth = getAuth();
-      await createUserWithEmailAndPassword(auth, newUser.email, generatedPassword);
-  
+      await createUserWithEmailAndPassword(
+        auth,
+        newUser.email,
+        generatedPassword
+      );
+
       // Add user to web_users collection in Firestore
       const docRef = await addDoc(collection(firestore, "web_users"), {
         email: newUser.email,
         firstName: newUser.firstName,
         lastName: newUser.lastName,
-        department: newUser.department
+        department: newUser.department,
       });
-  
+
       const newUserWithId = { id: docRef.id, ...newUser };
-  
+
       // Update local data
       setLocalWebUserData((prevData) => [...prevData, newUserWithId]);
       setWebUserData((prevData) => [...prevData, newUserWithId]);
-  
+
       // Send email with the generated password
       await sendPasswordResetEmail(auth, newUser.email);
-  
+
       // Close modal
       setShowModal(false);
-  
-      alert(`User added successfully. Password generated and sent to ${newUser.email}.`);
+
+      alert(
+        `User added successfully. Password generated and sent to ${newUser.email}.`
+      );
     } catch (error) {
       console.error("Error adding user: ", error);
       alert("Failed to add user. Please try again later.");
     }
   };
-  
+
   const isValidEmail = (email) => {
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailPattern.test(email);
@@ -413,7 +427,9 @@ function App() {
       "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let storedPassword = "";
     for (let i = 0; i < length; i++) {
-      storedPassword += charset.charAt(Math.floor(Math.random() * charset.length));
+      storedPassword += charset.charAt(
+        Math.floor(Math.random() * charset.length)
+      );
     }
     return storedPassword;
   };
@@ -434,16 +450,21 @@ function App() {
     setUserToDelete(email);
     setShowConfirmationModal(true);
   };
-
+  
   const confirmDeleteUser = async () => {
     try {
+      // Delete user from Firebase Authentication
+      const auth = getAuth();
+      await deleteUser(auth.currentUser);
+  
+      // Delete user from Firestore
       const userSnapshot = await getDocs(
         query(
           collection(firestore, "web_users"),
           where("email", "==", userToDelete)
         )
       );
-
+  
       if (!userSnapshot.empty) {
         await deleteDoc(doc(firestore, "web_users", userSnapshot.docs[0].id));
         setWebUserData((prevUsers) =>
@@ -477,8 +498,10 @@ function App() {
       <div className="container">
         <div className="headers">
           <div className="icons">
-            <div style={{marginTop: "-20px"}}><h1>Users</h1></div>
-            
+            <div style={{ marginTop: "-20px" }}>
+              <h1>Users</h1>
+            </div>
+
             <img src={notification} alt="Notification.png" className="notif" />
             <img src={logo} alt="logo" className="account-img" />
             <div className="account-names">
@@ -486,7 +509,6 @@ function App() {
             </div>
           </div>
         </div>
-
 
         <div style={{ marginTop: "90px" }}>
           <h2>Mobile Users</h2>
@@ -496,7 +518,7 @@ function App() {
           <FaSearch className="search-iconss"></FaSearch>
           <input
             type="text"
-            placeholder="Search by Name"
+            placeholder="Search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="search-inputss"
@@ -660,10 +682,18 @@ function App() {
             </Form>
           </Modal.Body>
           <Modal.Footer>
-            <Button className="modal-btn" variant="secondary" onClick={() => setShowModal(false)} >
+            <Button
+              className="modal-btn"
+              variant="secondary"
+              onClick={() => setShowModal(false)}
+            >
               Cancel
             </Button>
-            <Button className="modal-btn" variant="primary" onClick={handleAddUser}>
+            <Button
+              className="modal-btn"
+              variant="primary"
+              onClick={handleAddUser}
+            >
               Save
             </Button>
           </Modal.Footer>
@@ -680,13 +710,18 @@ function App() {
             Are you sure you want to delete the user with email: {userToDelete}?
           </Modal.Body>
           <Modal.Footer>
-            <Button className="modal-btn"
+            <Button
+              className="modal-btn"
               variant="secondary"
               onClick={() => setShowConfirmationModal(false)}
             >
               Cancel
             </Button>
-            <Button className="modal-btn" variant="danger" onClick={confirmDeleteUser}>
+            <Button
+              className="modal-btn"
+              variant="danger"
+              onClick={confirmDeleteUser}
+            >
               Delete
             </Button>
           </Modal.Footer>
@@ -697,10 +732,10 @@ function App() {
           <h2>Web Users</h2>
 
           <div className="search-contain">
-            <FaSearch className="search-iconss"></FaSearch>
+            <FaSearch className="search-iconsss"></FaSearch>
             <input
               type="text"
-              placeholder="Search by Name"
+              placeholder="Search"
               value={webUserSearchQuery}
               onChange={handleWebUsersSearch}
               className="search-inputsss"
@@ -778,7 +813,6 @@ const DropdownButton = ({ handleExport }) => (
     <div className="dropdown-content">
       <button onClick={() => handleExport("pdf")}>Export as PDF</button>
       <button onClick={() => handleExport("csv")}>Export as CSV</button>
-      {/* Add more buttons for other export types */}
     </div>
   </div>
 );
