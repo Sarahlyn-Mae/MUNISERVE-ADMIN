@@ -350,7 +350,7 @@ function App() {
             
             <img src={notification} alt="Notification.png" className="notif" />
             <img src={logo} alt="logo" className="account-img" />
-            <div className="account-names">
+            <div className="account-namess">
               <h2>{userEmail}</h2>
             </div>
           </div>

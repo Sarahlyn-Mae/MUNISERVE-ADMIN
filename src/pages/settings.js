@@ -250,17 +250,9 @@ const AdminSettings = () => {
 
           {/* Other content */}
           <div>
-            <Link to="editables" className="link">
-              <div className="content-container">
-                <span>
-                  <FontAwesomeIcon icon={faEdit} className="iconss" />
-                </span>{" "}
-                <span className="text">Editables</span>
-              </div>
-            </Link>
 
             <Link to="helps" className="link">
-              <div className="privacy-container">
+              <div className="content-container">
                 <span>
                   <FontAwesomeIcon icon={faTools} className="iconss" />
                 </span>{" "}

@@ -1921,7 +1921,7 @@ function App() {
                 fontWeight: "bold",
               }}
             >
-              Figure 4. TOTAL TRANSACTIONS PER BARANGAYS
+              Figure 5. TOTAL TRANSACTIONS PER BARANGAYS
             </h5>
             <p
               style={{
@@ -1960,86 +1960,6 @@ function App() {
           </div>
         </div>
 
-        <div className="filterss">
-          <label>Year:</label>
-          <select value={selectedFilter.year} onChange={handleYearChange}>
-            {Array.from(
-              { length: 10 },
-              (_, i) => new Date().getFullYear() - i
-            ).map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="yearly-barangay-chart">
-          <ReactApexChart
-            options={{
-              chart: {
-                type: "bar",
-                height: 400,
-              },
-              plotOptions: {
-                bar: {
-                  horizontal: false,
-                  stacked: true,
-                },
-              },
-              xaxis: {
-                type: "category",
-                categories: yearlyDataBarangay.map((data) => data.barangay),
-                labels: {
-                  show: true,
-                  rotate: -45,
-                },
-              },
-            }}
-            series={serviceCollections.map((service) => ({
-              name: service,
-              data: yearlyDataBarangay.map((data) => data[service] || 0),
-            }))}
-            type="bar"
-            width={1300}
-            height={600}
-          />
-          <div className="description">
-            <h5
-              style={{
-                textAlign: "center",
-                marginTop: "20px",
-                fontWeight: "bold",
-              }}
-            >
-              Figure 5. TOTAL TRANSACTIONS PER BARANGAYS BASED ON SERVICE
-              CATEGORIES
-            </h5>
-            <p
-              style={{
-                textAlign: "center",
-                fontSize: "16px",
-                fontWeight: "normal",
-              }}
-            >
-              The chart illustrates the comprehensive overview of transactional
-              activities across various barangays, focusing on distinct service
-              categories such as birth registrations, marriage registrations,
-              death registrations, appointment scheduling, and job applications.
-              The primary objective is to provide a detailed analysis of the
-              total number of transactions within each barangay for these
-              specific services. <br />
-              The visual representation offers valuable insights into the
-              distribution and intensity of transactions, allowing for a
-              comparative assessment of the service utilization patterns among
-              different communities. This data-driven depiction facilitates a
-              deeper understanding of the dynamics of public service engagement,
-              enabling stakeholders to identify trends, allocate resources
-              effectively, and make informed decisions to enhance the overall
-              service delivery system.
-            </p>
-          </div>
-        </div>
 
         <div className="analytics">
           <div className="monthly-status-chart">

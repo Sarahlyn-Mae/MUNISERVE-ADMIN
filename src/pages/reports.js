@@ -46,6 +46,7 @@ function App() {
   const [selectedStatusFilter, setSelectedStatusFilter] = useState("");
   const [selectedBarangayFilter, setSelectedBarangayFilter] = useState("");
   const [selectedServiceTypeFilter, setSelectedServiceTypeFilter] = useState("");
+  const [selectedDepartmentFilter, setSelectedDepartmentFilter] = useState("");
 
    //Function for the account name
    const { user } = useAuth();
@@ -400,6 +401,23 @@ function App() {
     return date instanceof Date && !isNaN(date);
   }
 
+  const departmentAccessor = (row) => {
+    // Check the service type and return the corresponding department
+    if (
+      row.collectionType === "Birth Registration" ||
+      row.collectionType === "Marriage Registration" ||
+      row.collectionType === "Death Registration" ||
+      row.collectionType === "Copy of Marriage Certificate" ||
+      row.collectionType === "Copy of Death Certificate"
+    ) {
+      return "Civil Registrar";
+    } else if (row.collectionType === "Job Application" || row.collectionType === "Appointments") {
+      return "HR Department";
+    } else {
+      return "Unknown";
+    }
+  };  
+
   // Define table columns
   const columns = React.useMemo(
     () => [
@@ -414,6 +432,10 @@ function App() {
       {
         Header: "Service Type",
         accessor: "collectionType", // New column for service or collection type
+      },
+      {
+        Header: "Department",
+        accessor: departmentAccessor, // Use the new accessor for Department
       },
       {
         Header: "Residency",
@@ -452,6 +474,10 @@ function App() {
   );
 
   // Add this function definition along with other filter change functions
+  const handleDepartmentFilterChange = (event) => {
+    setSelectedDepartmentFilter(event.target.value);
+  };
+
   const handleBarangayFilterChange = (event) => {
     setSelectedBarangayFilter(event.target.value);
   };
@@ -518,6 +544,9 @@ function App() {
       (selectedServiceTypeFilter !== ""
         ? item.collectionType &&
           item.collectionType.toLowerCase() === lowerCaseServiceTypeFilter
+        : true) &&
+      (selectedDepartmentFilter !== ""
+        ? departmentAccessor(item) === selectedDepartmentFilter
         : true)
     );
   });
@@ -619,12 +648,12 @@ function App() {
           <FaSearch className="search-iconn"></FaSearch>
           <input
             type="text"
-            placeholder="Search by Name"
+            placeholder="Search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="search-inputt"
           />
-          <div className="filter-container">
+          <div className="filter-container" style={{marginLeft: "30px", marginRight: "-40px"}}>
           <label>Filter:</label>
           <select
             value={selectedYearFilter}
@@ -741,6 +770,7 @@ function App() {
               className="filter"
             >
               <option value="">Service Type</option>
+              <option value="Appointments">Appointments</option>
               <option value="Birth Registration">Birth Registration</option>
               <option value="Copy of Marriage Certificate">
                 Copy of Marriage Certificate
@@ -754,6 +784,16 @@ function App() {
               <option value="Death Registration">Death Registration</option>
               <option value="Job Application">Job Application</option>
               {/* Add options for other service types */}
+            </select>
+
+            <select
+              value={selectedDepartmentFilter}
+              onChange={handleDepartmentFilterChange}
+              className="filter"
+            >
+              <option value="">Department</option>
+              <option value="Civil Registrar">Civil Registrar</option>
+              <option value="HR Department">HR Department</option>
             </select>
 
             <select

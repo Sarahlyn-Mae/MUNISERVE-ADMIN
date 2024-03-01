@@ -72,8 +72,8 @@
     border-radius: 50px;
 }
 
-.account-name {
-    background-color: #307A59;
+.account-names {
+    background-color: yellow;
     width: 115px;
     height: 33px;
     font-size: 14px;
@@ -89,7 +89,7 @@
     z-index: 1;
 }
 
-.account-name h1 {
+.account-names h1 {
     margin: 0; 
     font-size: 14px;
     font-weight: 400;

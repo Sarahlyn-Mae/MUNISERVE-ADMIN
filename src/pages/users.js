@@ -4,6 +4,9 @@ import {
   getAuth,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
+  GoogleAuthProvider,
+  deleteUser as deleteAuthUser,
+  signOut 
 } from "firebase/auth";
 import {
   getFirestore,
@@ -43,6 +46,16 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const firestore = getFirestore(app);
 
+const DropdownButton = ({ handleExport }) => (
+  <div className="dropdown">
+    <button className="dropbtn">Export File</button>
+    <div className="dropdown-content">
+      <button onClick={() => handleExport("pdf")}>Export as PDF</button>
+      <button onClick={() => handleExport("csv")}>Export as CSV</button>
+    </div>
+  </div>
+);
+
 function App() {
   // State to hold the fetched data
   const [data, setData] = useState([]);
@@ -53,6 +66,11 @@ function App() {
   const [userToDelete, setUserToDelete] = useState(null);
   const [isAddYearModalOpen, setIsAddYearModalOpen] = useState(false);
   const [newYear, setNewYear] = useState("");
+  // Define localAdminUserData state
+  const [localAdminUserData, setLocalAdminUserData] = useState([]);
+
+  // State for admin users
+  const [adminUserData, setAdminUserData] = useState([]);
 
   //Function for the account name
   const { user } = useAuth();
@@ -268,14 +286,19 @@ function App() {
 
   // Filter data based on the search query
   const filteredData = data.filter((item) => {
+    const email = item.email || "";
+    const firstName = item.firstName || "";
+    const lastName = item.lastName || "";
+    const barangay = item.barangay || "";
+
     const matchesSearch =
-      item.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.barangay.toLowerCase().includes(searchQuery.toLowerCase()); // Include barangay in search criteria
+      email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      barangay.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesBarangay =
-      !selectedBarangayFilter || item.barangay === selectedBarangayFilter;
+      !selectedBarangayFilter || barangay === selectedBarangayFilter;
 
     return matchesSearch && matchesBarangay;
   });
@@ -306,6 +329,7 @@ function App() {
     firstName: "",
     lastName: "",
     department: "",
+    role: "",
     storedPassword: "",
   });
 
@@ -317,20 +341,33 @@ function App() {
   const [localWebUserData, setLocalWebUserData] = useState([]);
 
   // Function to fetch web users data from Firestore
-  const fetchWebUserData = async () => {
-    try {
-      const snapshot = await collection(firestore, "web_users");
-      const querySnapshot = await getDocs(snapshot);
-      const items = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setWebUserData(items);
-      setLocalWebUserData(items); // Initialize localWebUserData with the fetched data
-    } catch (error) {
-      console.error("Error fetching web users data: ", error);
-    }
-  };
+const fetchWebUserData = async () => {
+  try {
+    const webUsersSnapshot = await collection(firestore, "web_users");
+    const adminUsersSnapshot = await collection(firestore, "admin_users");
+
+    const webUsersQuerySnapshot = await getDocs(webUsersSnapshot);
+    const adminUsersQuerySnapshot = await getDocs(adminUsersSnapshot);
+
+    const webUsers = webUsersQuerySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    const adminUsers = adminUsersQuerySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    const mergedUsers = [...webUsers, ...adminUsers];
+
+    setWebUserData(mergedUsers);
+    setLocalWebUserData(mergedUsers);
+  } catch (error) {
+    console.error("Error fetching web users data: ", error);
+  }
+};
+
 
   // Function to handle office filter change for web users
   const handleWebUsersOfficeFilterChange = (e) => {
@@ -374,39 +411,46 @@ function App() {
       alert("Please enter a valid email address.");
       return;
     }
-
+  
     try {
-      // Generate a random password
+      // Generate a password for the user
       const generatedPassword = generatePassword();
-
-      // Add user to Firebase Authentication with the generated password
-      const auth = getAuth();
-      await createUserWithEmailAndPassword(
-        auth,
-        newUser.email,
-        generatedPassword
-      );
-
-      // Add user to web_users collection in Firestore
-      const docRef = await addDoc(collection(firestore, "web_users"), {
+  
+      // Add the user details to Firestore
+      let collectionRef;
+      if (newUser.role === "Admin") {
+        collectionRef = collection(firestore, "admin_users");
+      } else if (newUser.role === "Employee") {
+        collectionRef = collection(firestore, "web_users");
+      } else {
+        alert("Invalid role specified.");
+        return;
+      }
+  
+      const docRef = await addDoc(collectionRef, {
         email: newUser.email,
         firstName: newUser.firstName,
         lastName: newUser.lastName,
         department: newUser.department,
+        role: newUser.role,
       });
-
+  
       const newUserWithId = { id: docRef.id, ...newUser };
-
-      // Update local data
-      setLocalWebUserData((prevData) => [...prevData, newUserWithId]);
-      setWebUserData((prevData) => [...prevData, newUserWithId]);
-
-      // Send email with the generated password
+  
+      if (newUser.role === "Admin") {
+        setLocalAdminUserData((prevData) => [...prevData, newUserWithId]);
+        setAdminUserData((prevData) => [...prevData, newUserWithId]);
+      } else if (newUser.role === "Employee") {
+        setLocalWebUserData((prevData) => [...prevData, newUserWithId]);
+        setWebUserData((prevData) => [...prevData, newUserWithId]);
+      }
+  
+      // Send a password reset email to the user
+      const auth = getAuth();
       await sendPasswordResetEmail(auth, newUser.email);
-
-      // Close modal
+  
       setShowModal(false);
-
+  
       alert(
         `User added successfully. Password generated and sent to ${newUser.email}.`
       );
@@ -415,7 +459,8 @@ function App() {
       alert("Failed to add user. Please try again later.");
     }
   };
-
+  
+  
   const isValidEmail = (email) => {
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailPattern.test(email);
@@ -450,31 +495,59 @@ function App() {
     setUserToDelete(email);
     setShowConfirmationModal(true);
   };
-  
-  const confirmDeleteUser = async () => {
+
+  const confirmDeleteUser = async (email) => {
     try {
-      // Delete user from Firebase Authentication
-      const auth = getAuth();
-      await deleteUser(auth.currentUser);
-  
-      // Delete user from Firestore
-      const userSnapshot = await getDocs(
-        query(
-          collection(firestore, "web_users"),
-          where("email", "==", userToDelete)
-        )
-      );
-  
-      if (!userSnapshot.empty) {
-        await deleteDoc(doc(firestore, "web_users", userSnapshot.docs[0].id));
-        setWebUserData((prevUsers) =>
-          prevUsers.filter((user) => user.email !== userToDelete)
-        );
-        setShowConfirmationModal(false);
-      }
+        // First, get the user to be deleted from Firebase Authentication
+        const auth = getAuth();
+        const user = await getUserByEmail(auth, email);
+
+        if (user) {
+            // Delete the user from Firebase Authentication
+            await deleteAuthUser(auth, user.uid);
+
+            // Next, delete the user from the Firestore 'web_users' collection
+            const usersCollection = collection(firestore, "web_users");
+            const querySnapshot = await getDocs(query(usersCollection, where("email", "==", email)));
+
+            if (!querySnapshot.empty) {
+                const docRef = doc(firestore, "web_users", querySnapshot.docs[0].id);
+                await deleteDoc(docRef);
+
+                // Provide a success message
+                alert("User deleted successfully.");
+            } else {
+                throw new Error("User not found in 'web_users' collection.");
+            }
+        } else {
+            throw new Error("User not found in Firebase Authentication.");
+        }
     } catch (error) {
-      console.error("Error deleting user: ", error);
+        console.error("Error deleting user: ", error);
+        alert("Failed to delete user. Please try again later.");
     }
+};
+
+
+  // Function to get user by email from Firebase Authentication
+  const getUserByEmail = async (auth, email) => {
+    try {
+      const userCredential = await getAuthUserByEmail(auth, email);
+      return userCredential.user;
+    } catch (error) {
+      console.error("Error fetching user: ", error);
+      return null;
+    }
+  };
+
+  // Function to get user by email from Firebase Authentication (Promisified)
+  const getAuthUserByEmail = (auth, email) => {
+    return getUserByEmail(auth, email);
+  };
+
+  // Function to delete user from Firebase Authentication (Promisified)
+  const deleteAuthUser = (auth, uid) => {
+    return deleteUser(auth, uid);
   };
 
   const openAddYearModal = () => {
@@ -633,7 +706,7 @@ function App() {
           </Modal.Header>
           <Modal.Body>
             <Form>
-              <Form.Group controlId="email">
+              <Form.Group controlId="emails">
                 <Form.Label>Email</Form.Label>
                 <Form.Control
                   type="email"
@@ -642,6 +715,7 @@ function App() {
                   onChange={(e) =>
                     setNewUser({ ...newUser, email: e.target.value })
                   }
+                  className="form-control"
                 />
               </Form.Group>
               <Form.Group controlId="firstName">
@@ -679,21 +753,29 @@ function App() {
                   className="form-control"
                 />
               </Form.Group>
+              <Form.Group controlId="role">
+                <Form.Label>Role</Form.Label>
+                <Form.Control
+                  type="text"
+                  placeholder="Enter Role (e.g. Admin or Employee)"
+                  value={newUser.role}
+                  onChange={(e) =>
+                    setNewUser({ ...newUser, role: e.target.value })
+                  }
+                  className="form-control"
+                />
+              </Form.Group>
             </Form>
           </Modal.Body>
           <Modal.Footer>
             <Button
-              className="modal-btn"
+              className="add"
               variant="secondary"
               onClick={() => setShowModal(false)}
             >
               Cancel
             </Button>
-            <Button
-              className="modal-btn"
-              variant="primary"
-              onClick={handleAddUser}
-            >
+            <Button className="add" variant="primary" onClick={handleAddUser}>
               Save
             </Button>
           </Modal.Footer>
@@ -711,14 +793,14 @@ function App() {
           </Modal.Body>
           <Modal.Footer>
             <Button
-              className="modal-btn"
+              className="add"
               variant="secondary"
               onClick={() => setShowConfirmationModal(false)}
             >
               Cancel
             </Button>
             <Button
-              className="modal-btn"
+              className="add"
               variant="danger"
               onClick={confirmDeleteUser}
             >
@@ -770,6 +852,7 @@ function App() {
                 <th>First Name</th>
                 <th>Last Name</th>
                 <th>Department</th>
+                <th>Role</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -788,6 +871,7 @@ function App() {
                   <td>{user.firstName}</td>
                   <td>{user.lastName}</td>
                   <td>{user.department}</td>
+                  <td>{user.role}</td>
                   <td>
                     <Button
                       className="add"
@@ -806,15 +890,5 @@ function App() {
     </div>
   );
 }
-
-const DropdownButton = ({ handleExport }) => (
-  <div className="dropdown">
-    <button className="dropbtn">Export File</button>
-    <div className="dropdown-content">
-      <button onClick={() => handleExport("pdf")}>Export as PDF</button>
-      <button onClick={() => handleExport("csv")}>Export as CSV</button>
-    </div>
-  </div>
-);
 
 export default App;
